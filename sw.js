@@ -1,23 +1,22 @@
-const CACHE_NAME = 'audio-walk-v1';
-// Укажите здесь точное имя вашего файла, если оно отличается
-const AUDIO_FILE = './track.mp3'; 
+const CACHE_NAME = 'audio-walk-v4';
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then(names => 
+            Promise.all(names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n)))
+        )
+    );
     event.waitUntil(clients.claim());
 });
 
 self.addEventListener('fetch', (event) => {
-    // Перехватываем запросы к нашему аудиофайлу
-    if (event.request.url.includes(AUDIO_FILE) || event.request.url.includes('track.mp3')) {
+    if (event.request.url.includes('supabase.co/storage')) {
         event.respondWith(
-            caches.match(event.request).then((cachedResponse) => {
-                // Если есть в кэше - отдаем из кэша, иначе качаем из сети
-                return cachedResponse || fetch(event.request);
-            })
+            caches.match(event.request).then(r => r || fetch(event.request))
         );
     }
 });
