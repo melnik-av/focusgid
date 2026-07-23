@@ -14,7 +14,6 @@ async function init() {
     statusEl.textContent = 'Подключение...';
     
     try {
-        // Получаем активный трек
         const { data, error } = await supabase
             .from('tracks')
             .select('*')
@@ -28,101 +27,93 @@ async function init() {
         }
         
         if (!data || data.length === 0) {
-            statusEl.textContent = '️ Нет доступных треков';
-            console.log('⚠️ Треков нет');
+            statusEl.textContent = '⚠️ Нет доступных треков';
             return;
         }
         
         const track = data[0];
         console.log('✅ Трек найден:', track);
-        console.log(' URL:', track.file_url);
+        console.log('🎵 URL:', track.file_url);
         
         titleEl.textContent = track.title || 'Аудиопрогулка';
         statusEl.textContent = 'Загрузка аудио...';
         
-        // Проверяем доступность файла
-        console.log('🔍 Проверка доступности файла...');
+        // Проверяем файл
+        console.log('🔍 Проверка файла...');
         const testResponse = await fetch(track.file_url, { method: 'HEAD' });
-        console.log('📊 Статус файла:', testResponse.status, testResponse.ok);
+        console.log('📊 Статус:', testResponse.status);
+        console.log('📊 Content-Type:', testResponse.headers.get('content-type'));
+        console.log('📊 Размер:', testResponse.headers.get('content-length'), 'байт');
         
         if (!testResponse.ok) {
             throw new Error(`Файл недоступен (HTTP ${testResponse.status})`);
         }
         
-        // Создаем аудио объект
+        const contentType = testResponse.headers.get('content-type');
+        if (!contentType || !contentType.includes('audio')) {
+            console.warn('⚠️ Неправильный Content-Type:', contentType);
+            console.warn('Должен быть audio/mpeg или audio/mp3');
+        }
+        
+        // Создаем аудио
         console.log('🎵 Создание Audio объекта...');
         audio = new Audio(track.file_url);
         
-        // События
         audio.addEventListener('canplay', () => {
-            console.log('✅ Аудио готово к воспроизведению');
-            statusEl.textContent = '✅ Готово к воспроизведению';
+            console.log('✅ Аудио готово');
+            statusEl.textContent = '✅ Готово';
             playBtn.disabled = false;
             playBtn.textContent = '▶ Играть';
         });
         
-        audio.addEventListener('canplaythrough', () => {
-            console.log('✅ Аудио загружено полностью');
-        });
-        
-        audio.addEventListener('loadeddata', () => {
-            console.log('📊 Данные загружены, длительность:', audio.duration, 'сек');
-        });
-        
         audio.addEventListener('error', (e) => {
             console.error('❌ Ошибка аудио:', e);
-            console.error('Код ошибки:', audio.error?.code);
+            console.error('Код:', audio.error?.code);
             console.error('Сообщение:', audio.error?.message);
             
             let errorMsg = 'Ошибка загрузки';
             if (audio.error?.code === 1) errorMsg = 'Ошибка сети';
             else if (audio.error?.code === 2) errorMsg = 'Файл повреждён';
+            else if (audio.error?.code === 3) errorMsg = 'Ошибка декодирования';
             else if (audio.error?.code === 4) errorMsg = 'Формат не поддерживается';
             
             statusEl.textContent = '❌ ' + errorMsg;
-            playBtn.disabled = true;
+            console.error('URL файла:', track.file_url);
+            console.error('Content-Type:', contentType);
         });
         
         audio.addEventListener('ended', () => {
-            console.log('⏹️ Воспроизведение завершено');
+            console.log('⏹️ Завершено');
             isPlaying = false;
             playBtn.textContent = '▶ Играть сначала';
         });
         
-        // Начинаем загрузку
-        console.log(' Начинаем загрузку аудио...');
         audio.load();
         
     } catch (error) {
-        console.error('💥 Критическая ошибка:', error);
-        statusEl.textContent = '❌ Ошибка: ' + error.message;
+        console.error('💥 Ошибка:', error);
+        statusEl.textContent = '❌ ' + error.message;
     }
 }
 
-// Обработчик кнопки Play/Pause
 playBtn.addEventListener('click', async () => {
-    console.log('👆 Клик по кнопке, isPlaying:', isPlaying);
+    console.log('👆 Клик');
     
     if (!audio) {
-        console.error('❌ Audio объект не создан');
-        statusEl.textContent = '❌ Аудио не загружено';
+        console.error('❌ Audio не создан');
         return;
     }
     
     if (isPlaying) {
-        // Пауза
-        console.log('⏸ Пауза');
         audio.pause();
         playBtn.textContent = '▶ Продолжить';
         isPlaying = false;
     } else {
-        // Воспроизведение
-        console.log('▶ Запуск воспроизведения...');
         try {
             await audio.play();
             playBtn.textContent = '⏸ Пауза';
             isPlaying = true;
-            console.log('✅ Воспроизведение началось');
+            console.log('▶ Воспроизведение');
         } catch (e) {
             console.error('❌ Ошибка play():', e);
             statusEl.textContent = '❌ Нажмите ещё раз';
@@ -130,6 +121,4 @@ playBtn.addEventListener('click', async () => {
     }
 });
 
-// Запускаем приложение
-console.log(' Инициализация...');
 init();
