@@ -33,7 +33,7 @@ async function init() {
         
         const track = data[0];
         console.log('✅ Трек найден:', track);
-        console.log('🎵 URL:', track.file_url);
+        console.log(' URL:', track.file_url);
         
         titleEl.textContent = track.title || 'Аудиопрогулка';
         statusEl.textContent = 'Загрузка аудио...';
@@ -43,25 +43,18 @@ async function init() {
         const testResponse = await fetch(track.file_url, { method: 'HEAD' });
         console.log('📊 Статус:', testResponse.status);
         console.log('📊 Content-Type:', testResponse.headers.get('content-type'));
-        console.log('📊 Размер:', testResponse.headers.get('content-length'), 'байт');
         
         if (!testResponse.ok) {
             throw new Error(`Файл недоступен (HTTP ${testResponse.status})`);
         }
         
-        const contentType = testResponse.headers.get('content-type');
-        if (!contentType || !contentType.includes('audio')) {
-            console.warn('⚠️ Неправильный Content-Type:', contentType);
-            console.warn('Должен быть audio/mpeg или audio/mp3');
-        }
-        
         // Создаем аудио
-        console.log('🎵 Создание Audio объекта...');
+        console.log(' Создание Audio объекта...');
         audio = new Audio(track.file_url);
         
         audio.addEventListener('canplay', () => {
             console.log('✅ Аудио готово');
-            statusEl.textContent = '✅ Готово';
+            statusEl.textContent = '✅ Готово к воспроизведению';
             playBtn.disabled = false;
             playBtn.textContent = '▶ Играть';
         });
@@ -78,8 +71,6 @@ async function init() {
             else if (audio.error?.code === 4) errorMsg = 'Формат не поддерживается';
             
             statusEl.textContent = '❌ ' + errorMsg;
-            console.error('URL файла:', track.file_url);
-            console.error('Content-Type:', contentType);
         });
         
         audio.addEventListener('ended', () => {
@@ -91,16 +82,17 @@ async function init() {
         audio.load();
         
     } catch (error) {
-        console.error('💥 Ошибка:', error);
+        console.error(' Ошибка:', error);
         statusEl.textContent = '❌ ' + error.message;
     }
 }
 
 playBtn.addEventListener('click', async () => {
-    console.log('👆 Клик');
+    console.log('👆 Клик по кнопке');
     
     if (!audio) {
         console.error('❌ Audio не создан');
+        statusEl.textContent = '❌ Аудио не загружено';
         return;
     }
     
@@ -113,12 +105,13 @@ playBtn.addEventListener('click', async () => {
             await audio.play();
             playBtn.textContent = '⏸ Пауза';
             isPlaying = true;
-            console.log('▶ Воспроизведение');
+            console.log('▶ Воспроизведение началось');
         } catch (e) {
             console.error('❌ Ошибка play():', e);
-            statusEl.textContent = '❌ Нажмите ещё раз';
+            statusEl.textContent = ' Нажмите ещё раз';
         }
     }
 });
 
+// Запуск
 init();
