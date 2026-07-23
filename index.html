@@ -41,6 +41,37 @@
             min-height: 40px;
             line-height: 1.4;
         }
+        
+        /* Прогресс-бар */
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+        .progress-container.active {
+            display: block;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #e94560, #ff6b6b);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+        .progress-text {
+            font-size: 14px;
+            color: #a0a0b0;
+            margin-bottom: 10px;
+            display: none;
+        }
+        .progress-text.active {
+            display: block;
+        }
+        
         button {
             background: #e94560;
             color: white;
@@ -53,6 +84,7 @@
             width: 100%;
             transition: all 0.2s ease;
             -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
         button:active { transform: scale(0.96); }
         button:disabled {
@@ -71,9 +103,16 @@
 </head>
 <body>
     <div class="player">
-        <span class="icon"></span>
+        <span class="icon">🎧</span>
         <h1 id="trackTitle">Загрузка...</h1>
         <div id="status">Инициализация...</div>
+        
+        <!-- Прогресс-бар -->
+        <div class="progress-text" id="progressText">Загрузка: 0%</div>
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
         <button id="playBtn" disabled>Загрузка...</button>
         <div class="hint">
             💡 <strong>Важно:</strong> Не блокируйте экран телефона во время прогулки. 
