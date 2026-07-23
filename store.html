@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Иммерсивные прогулки - Магазин аудиоэкскурсий</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        /* Шапка */
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #a0a0b0;
+            font-size: 16px;
+        }
+        
+        /* Контейнер */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        /* Сетка треков */
+        .tracks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        /* Карточка трека */
+        .track-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .track-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .track-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .track-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .track-description {
+            color: #a0a0b0;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            min-height: 60px;
+        }
+        
+        /* Превью плеер */
+        .preview-player {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .preview-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .play-preview-btn {
+            background: #e94560;
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .play-preview-btn:hover {
+            background: #d63851;
+        }
+        
+        .preview-info {
+            flex: 1;
+        }
+        
+        .preview-label {
+            font-size: 12px;
+            color: #6c6c7d;
+            margin-bottom: 5px;
+        }
+        
+        .preview-progress {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .preview-progress-bar {
+            height: 100%;
+            background: #e94560;
+            width: 0%;
+            transition: width 0.1s;
+        }
+        
+        /* Цены и кнопки */
+        .pricing {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .price-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .price-info {
+            flex: 1;
+        }
+        
+        .price-type {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        
+        .price-desc {
+            font-size: 12px;
+            color: #6c6c7d;
+        }
+        
+        .price-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #e94560;
+            margin-right: 15px;
+        }
+        
+        .buy-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        
+        .buy-btn:hover {
+            background: #45a049;
+        }
+        
+        /* Модальное окно покупки */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: #1a1a2e;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal h2 {
+            margin-bottom: 20px;
+        }
+        
+        .modal input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+        }
+        
+        .modal input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .btn-confirm {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn-cancel {
+            background: #666;
+            color: white;
+        }
+        
+        /* Сообщение об успехе */
+        .success-message {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        
+        .access-key {
+            font-family: monospace;
+            font-size: 18px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 15px 0;
+            letter-spacing: 2px;
+        }
+        
+        /* Загрузка */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #a0a0b0;
+        }
+        
+        @media (max-width: 768px) {
+            .tracks-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎧 Иммерсивные прогулки</h1>
+        <p>Аудиоэкскурсии по историческим местам</p>
+    </div>
+    
+    <div class="container">
+        <div id="tracksContainer" class="loading">
+            Загрузка треков...
+        </div>
+    </div>
+    
+    <!-- Модальное окно покупки -->
+    <div id="purchaseModal" class="modal">
+        <div class="modal-content">
+            <h2>Оформление покупки</h2>
+            <div id="modalBody">
+                <p id="purchaseInfo"></p>
+                <input type="email" id="buyerEmail" placeholder="Ваш email для получения ключа">
+                <div class="modal-buttons">
+                    <button class="btn-cancel" onclick="closeModal()">Отмена</button>
+                    <button class="btn-confirm" onclick="confirmPurchase()">Оплатить</button>
+                </div>
+            </div>
+            <div id="successBlock" style="display: none;">
+                <div class="success-message">
+                    <h3>✅ Покупка оформлена!</h3>
+                    <p>Ваш ключ доступа:</p>
+                    <div class="access-key" id="accessKeyDisplay"></div>
+                    <p style="font-size: 14px; color: #a0a0b0;">
+                        Сохраните этот ключ. Он понадобится для активации трека в плеере.
+                    </p>
+                    <button class="btn-confirm" style="width: 100%; margin-top: 15px;" onclick="copyAccessKey()">
+                        📋 Скопировать ключ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from './supabase-config.js';
+        
+        let currentTrack = null;
+        let currentLicenseType = null;
+        let currentPrice = 0;
+        let previewAudio = null;
+        let isPlayingPreview = false;
+        
+        // Загрузка треков
+        async function loadTracks() {
+            try {
+                const { data: tracks, error } = await supabase
+                    .from('tracks')
+                    .select('*')
+                    .eq('active', true)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                const container = document.getElementById('tracksContainer');
+                
+                if (!tracks || tracks.length === 0) {
+                    container.innerHTML = '<div class="loading">Нет доступных треков</div>';
+                    return;
+                }
+                
+                container.innerHTML = `
+                    <div class="tracks-grid">
+                        ${tracks.map(track => createTrackCard(track)).join('')}
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+                document.getElementById('tracksContainer').innerHTML = 
+                    '<div class="loading">Ошибка загрузки треков</div>';
+            }
+        }
+        
+        // Создание карточки трека
+        function createTrackCard(track) {
+            const rentalPrice = track.price;
+            const permanentPrice = Math.round(track.price * 3); // В 3 раза дороже
+            
+            return `
+                <div class="track-card">
+                    <div class="track-icon"></div>
+                    <div class="track-title">${track.title}</div>
+                    <div class="track-description">${track.description || 'Описание отсутствует'}</div>
+                    
+                    <div class="preview-player">
+                        <div class="preview-controls">
+                            <button class="play-preview-btn" onclick="togglePreview('${track.id}', '${track.file_url}')">
+                                ▶
+                            </button>
+                            <div class="preview-info">
+                                <div class="preview-label">Превью (30 сек)</div>
+                                <div class="preview-progress">
+                                    <div class="preview-progress-bar" id="progress-${track.id}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="pricing">
+                        <div class="price-option">
+                            <div class="price-info">
+                                <div class="price-type">Аренда на 30 дней</div>
+                                <div class="price-desc">Доступ на 30 дней с момента активации</div>
+                            </div>
+                            <div class="price-value">${rentalPrice} ₽</div>
+                            <button class="buy-btn" onclick="openPurchaseModal('${track.id}', 'rental', ${rentalPrice}, '${track.title.replace(/'/g, "\\'")}')">
+                                Купить
+                            </button>
+                        </div>
+                        
+                        <div class="price-option">
+                            <div class="price-info">
+                                <div class="price-type">Навсегда</div>
+                                <div class="price-desc">Бессрочный доступ к треку</div>
+                            </div>
+                            <div class="price-value">${permanentPrice} ₽</div>
+                            <button class="buy-btn" onclick="openPurchaseModal('${track.id}', 'permanent', ${permanentPrice}, '${track.title.replace(/'/g, "\\'")}')">
+                                Купить
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Воспроизведение превью
+        window.togglePreview = (trackId, fileUrl) => {
+            const btn = event.target;
+            const progressBar = document.getElementById(`progress-${trackId}`);
+            
+            // Останавливаем текущее превью
+            if (previewAudio && isPlayingPreview) {
+                previewAudio.pause();
+                previewAudio = null;
+                isPlayingPreview = false;
+                document.querySelectorAll('.play-preview-btn').forEach(b => b.textContent = '▶');
+                document.querySelectorAll('.preview-progress-bar').forEach(b => b.style.width = '0%');
+            }
+            
+            // Если это тот же трек - просто останавливаем
+            if (previewAudio && previewAudio.dataset.trackId === trackId) {
+                return;
+            }
+            
+            // Запускаем новое превью
+            previewAudio = new Audio(fileUrl + '?t=' + Date.now());
+            previewAudio.dataset.trackId = trackId;
+            
+            previewAudio.addEventListener('timeupdate', () => {
+                const progress = (previewAudio.currentTime / 30) * 100;
+                progressBar.style.width = Math.min(progress, 100) + '%';
+                
+                // Останавливаем на 30 секундах
+                if (previewAudio.currentTime >= 30) {
+                    previewAudio.pause();
+                    isPlayingPreview = false;
+                    btn.textContent = '▶';
+                    progressBar.style.width = '100%';
+                }
+            });
+            
+            previewAudio.addEventListener('ended', () => {
+                isPlayingPreview = false;
+                btn.textContent = '▶';
+            });
+            
+            previewAudio.play();
+            isPlayingPreview = true;
+            btn.textContent = '⏸';
+        };
+        
+        // Открытие модального окна покупки
+        window.openPurchaseModal = (trackId, licenseType, price, title) => {
+            currentTrack = trackId;
+            currentLicenseType = licenseType;
+            currentPrice = price;
+            
+            const licenseText = licenseType === 'rental' ? 'Аренда на 30 дней' : 'Навсегда';
+            document.getElementById('purchaseInfo').innerHTML = `
+                <strong>${title}</strong><br>
+                Тип: ${licenseText}<br>
+                Сумма: ${price} ₽
+            `;
+            
+            document.getElementById('purchaseModal').classList.add('active');
+            document.getElementById('modalBody').style.display = 'block';
+            document.getElementById('successBlock').style.display = 'none';
+        };
+        
+        // Закрытие модального окна
+        window.closeModal = () => {
+            document.getElementById('purchaseModal').classList.remove('active');
+            document.getElementById('buyerEmail').value = '';
+        };
+        
+        // Подтверждение покупки
+        window.confirmPurchase = async () => {
+            const email = document.getElementById('buyerEmail').value.trim();
+            
+            if (!email || !email.includes('@')) {
+                alert('Введите корректный email');
+                return;
+            }
+            
+            try {
+                // Генерируем ключ доступа
+                const accessKey = Math.random().toString(36).substr(2, 8).toUpperCase() + 
+                                  Math.random().toString(36).substr(2, 8).toUpperCase();
+                
+                // Вычисляем дату истечения
+                const expiresAt = currentLicenseType === 'rental' 
+                    ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                    : null;
+                
+                // Создаем запись о покупке
+                const { error } = await supabase
+                    .from('purchases')
+                    .insert({
+                        user_email: email,
+                        track_id: currentTrack,
+                        license_type: currentLicenseType,
+                        access_key: accessKey,
+                        price: currentPrice,
+                        expires_at: expiresAt,
+                        payment_status: 'completed' // В реальности здесь будет интеграция с платежкой
+                    });
+                
+                if (error) throw error;
+                
+                // Показываем ключ
+                document.getElementById('accessKeyDisplay').textContent = accessKey;
+                document.getElementById('modalBody').style.display = 'none';
+                document.getElementById('successBlock').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Ошибка покупки:', error);
+                alert('Ошибка оформления покупки: ' + error.message);
+            }
+        };
+        
+        // Копирование ключа
+        window.copyAccessKey = async () => {
+            const key = document.getElementById('accessKeyDisplay').textContent;
+            await navigator.clipboard.writeText(key);
+            alert('Ключ скопирован!');
+        };
+        
+        // Закрытие модалки по клику вне
+        document.getElementById('purchaseModal').addEventListener('click', (e) => {
+            if (e.target.id === 'purchaseModal') {
+                closeModal();
+            }
+        });
+        
+        // Загрузка при старте
+        loadTracks();
+    </script>
+</body>
+</html>
