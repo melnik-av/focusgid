@@ -1,4 +1,4 @@
-const CACHE_NAME = 'audio-walk-v6';
+const CACHE_NAME = 'audio-walk-v7';
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
