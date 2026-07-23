@@ -2,15 +2,104 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Админ-панель</title>
     <style>
-        body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; background: #1a1a2e; color: white; }
-        input, button { padding: 12px; margin: 8px 0; width: 100%; box-sizing: border-box; border-radius: 8px; border: none; }
-        input { background: rgba(255,255,255,0.1); color: white; }
-        button { background: #e94560; color: white; cursor: pointer; font-weight: 600; }
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #1a1a2e; 
+            color: white; 
+            min-height: 100vh;
+        }
+        h1 { margin-top: 0; }
+        input, button { 
+            padding: 12px; 
+            margin: 8px 0; 
+            width: 100%; 
+            box-sizing: border-box; 
+            border-radius: 8px; 
+            border: none; 
+            font-size: 16px;
+        }
+        input { 
+            background: rgba(255,255,255,0.1); 
+            color: white; 
+        }
+        input::placeholder { color: rgba(255,255,255,0.5); }
+        button { 
+            background: #e94560; 
+            color: white; 
+            cursor: pointer; 
+            font-weight: 600; 
+            transition: background 0.2s;
+        }
         button:hover { background: #d63851; }
-        #status { margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; min-height: 20px; }
-        .hidden { display: none; }
+        button:disabled { background: #4a4a5a; cursor: not-allowed; }
+        #status { 
+            margin-top: 20px; 
+            padding: 15px; 
+            background: rgba(255,255,255,0.1); 
+            border-radius: 8px; 
+            min-height: 20px; 
+        }
+        .hidden { display: none !important; }
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .user-email {
+            font-size: 14px;
+            color: #a0a0b0;
+        }
+        .logout-btn {
+            background: #666;
+            width: auto;
+            padding: 8px 16px;
+            font-size: 14px;
+            margin: 0;
+        }
+        .logout-btn:hover { background: #555; }
+        .track-item {
+            padding: 15px; 
+            background: rgba(255,255,255,0.05); 
+            margin: 10px 0; 
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .track-info { flex: 1; min-width: 200px; }
+        .track-title { font-weight: 600; margin-bottom: 5px; }
+        .track-meta { font-size: 14px; color: #a0a0b0; }
+        .track-link { 
+            font-size: 12px; 
+            color: #6c6c7d; 
+            margin-top: 5px; 
+            word-break: break-all;
+            font-family: monospace;
+        }
+        .track-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .track-actions button {
+            width: auto;
+            padding: 8px 16px;
+            font-size: 14px;
+            margin: 0;
+        }
+        .btn-copy { background: #4CAF50; }
+        .btn-copy:hover { background: #45a049; }
+        .btn-delete { background: #8b0000; }
+        .btn-delete:hover { background: #a00000; }
     </style>
 </head>
 <body>
@@ -21,15 +110,24 @@
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Пароль">
         <button onclick="login()">Войти</button>
+        <div id="loginError" style="color: #e94560; margin-top: 10px;"></div>
     </div>
     
     <div id="adminPanel" class="hidden">
+        <div class="user-info">
+            <div>
+                <div style="font-weight: 600;">Вы вошли как:</div>
+                <div class="user-email" id="userEmail">—</div>
+            </div>
+            <button class="logout-btn" onclick="logout()">Выйти</button>
+        </div>
+        
         <h2>Добавить трек</h2>
         <input type="text" id="title" placeholder="Название трека">
         <input type="number" id="price" placeholder="Цена (руб)" value="500">
         <input type="number" id="days" placeholder="Дней доступа" value="7">
         <input type="file" id="mp3file" accept="audio/mp3,audio/mpeg">
-        <button onclick="uploadTrack()">Загрузить трек</button>
+        <button onclick="uploadTrack()" id="uploadBtn">Загрузить трек</button>
         <div id="status"></div>
         
         <h2 style="margin-top: 40px;">Список треков</h2>
@@ -39,70 +137,160 @@
     <script type="module">
         import { supabase } from './supabase-config.js';
 
-        // Вход
         window.login = async () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('loginError');
+            errorEl.textContent = '';
+            
             const { error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) alert('Ошибка: ' + error.message);
+            if (error) {
+                errorEl.textContent = '❌ ' + error.message;
+            }
         };
 
-        // Проверка авторизации
+        window.logout = async () => {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                alert('Ошибка выхода: ' + error.message);
+            }
+        };
+
         supabase.auth.onAuthStateChange((event, session) => {
-            if (session) {
+            if (session && session.user) {
                 document.getElementById('loginForm').classList.add('hidden');
                 document.getElementById('adminPanel').classList.remove('hidden');
+                document.getElementById('userEmail').textContent = session.user.email;
                 loadTracks();
+            } else {
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('adminPanel').classList.add('hidden');
             }
         });
 
-        // Загрузка треков
         async function loadTracks() {
-            const { data: tracks } = await supabase.from('tracks').select('*').order('created_at', { ascending: false });
+            const { data: tracks, error } = await supabase
+                .from('tracks')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) {
+                console.error('Ошибка загрузки:', error);
+                return;
+            }
+            
             const list = document.getElementById('tracksList');
-            list.innerHTML = tracks.map(t => `
-                <div style="padding: 10px; background: rgba(255,255,255,0.05); margin: 5px 0; border-radius: 8px;">
-                    <strong>${t.title}</strong> — ${t.price} руб, ${t.duration_days} дней
-                    <button onclick="toggleTrack('${t.id}', ${!t.active})" style="margin-left: 10px; padding: 5px 10px; width: auto;">
-                        ${t.active ? 'Отключить' : 'Включить'}
-                    </button>
-                </div>
-            `).join('');
+            if (!tracks || tracks.length === 0) {
+                list.innerHTML = '<div style="color: #a0a0b0;">Нет треков</div>';
+                return;
+            }
+            
+            const playerUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
+            
+            list.innerHTML = tracks.map(t => {
+                const trackLink = `${playerUrl}?track=${t.id}`;
+                
+                return `
+                    <div class="track-item">
+                        <div class="track-info">
+                            <div class="track-title">${t.title}</div>
+                            <div class="track-meta">${t.price} руб, ${t.duration_days} дней</div>
+                            <div class="track-link">${trackLink}</div>
+                        </div>
+                        <div class="track-actions">
+                            <button class="btn-copy" onclick="copyLink('${trackLink}', '${t.title.replace(/'/g, "\\'")}')">
+                                📋 Копировать
+                            </button>
+                            <button onclick="toggleTrack('${t.id}', ${!t.active})">
+                                ${t.active ? 'Отключить' : 'Включить'}
+                            </button>
+                            <button class="btn-delete" onclick="deleteTrack('${t.id}')">Удалить</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
-        // Переключение активности трека
-        window.toggleTrack = async (id, active) => {
-            await supabase.from('tracks').update({ active }).eq('id', id);
-            loadTracks();
+        window.copyLink = async (link, title) => {
+            try {
+                await navigator.clipboard.writeText(link);
+                
+                const status = document.getElementById('status');
+                status.textContent = `✅ Ссылка на "${title}" скопирована!`;
+                status.style.background = 'rgba(76, 175, 80, 0.2)';
+                
+                setTimeout(() => {
+                    status.textContent = '';
+                    status.style.background = 'rgba(255,255,255,0.1)';
+                }, 3000);
+            } catch (err) {
+                const textArea = document.createElement('textarea');
+                textArea.value = link;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                alert('Ссылка скопирована!');
+            }
         };
 
-        // Загрузка трека
+        window.toggleTrack = async (id, active) => {
+            const { error } = await supabase
+                .from('tracks')
+                .update({ active })
+                .eq('id', id);
+            
+            if (error) {
+                alert('Ошибка: ' + error.message);
+            } else {
+                loadTracks();
+            }
+        };
+
+        window.deleteTrack = async (id) => {
+            if (!confirm('Удалить этот трек?')) return;
+            
+            const { error } = await supabase
+                .from('tracks')
+                .delete()
+                .eq('id', id);
+            
+            if (error) {
+                alert('Ошибка удаления: ' + error.message);
+            } else {
+                loadTracks();
+            }
+        };
+
         window.uploadTrack = async () => {
             const status = document.getElementById('status');
-            const title = document.getElementById('title').value;
+            const uploadBtn = document.getElementById('uploadBtn');
+            const title = document.getElementById('title').value.trim();
             const price = parseInt(document.getElementById('price').value);
             const days = parseInt(document.getElementById('days').value);
             const file = document.getElementById('mp3file').files[0];
 
-            if (!file || !title) { alert('Заполните название и выберите файл'); return; }
+            if (!file || !title) { 
+                alert('Заполните название и выберите файл'); 
+                return; 
+            }
 
             status.textContent = '⏳ Загрузка файла...';
+            uploadBtn.disabled = true;
 
             try {
-                // Загрузка MP3 в Storage
-                const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
+                const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
                 const { error: uploadError } = await supabase.storage
                     .from('tracks')
                     .upload(fileName, file);
                 
                 if (uploadError) throw uploadError;
 
-                // Получение публичной ссылки
                 const { data: { publicUrl } } = supabase.storage
                     .from('tracks')
                     .getPublicUrl(fileName);
 
-                // Добавление записи в базу
                 const { error: dbError } = await supabase.from('tracks').insert({
                     title,
                     price,
@@ -119,6 +307,8 @@
                 loadTracks();
             } catch (e) {
                 status.textContent = '❌ Ошибка: ' + e.message;
+            } finally {
+                uploadBtn.disabled = false;
             }
         };
     </script>
