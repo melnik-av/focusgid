@@ -31,10 +31,7 @@
             color: white; 
         }
         input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.5); }
-        textarea { 
-            resize: vertical; 
-            min-height: 80px; 
-        }
+        textarea { resize: vertical; min-height: 80px; }
         button { 
             background: #e94560; 
             color: white; 
@@ -61,17 +58,8 @@
             border-radius: 8px;
             margin-bottom: 20px;
         }
-        .user-email {
-            font-size: 14px;
-            color: #a0a0b0;
-        }
-        .logout-btn {
-            background: #666;
-            width: auto;
-            padding: 8px 16px;
-            font-size: 14px;
-            margin: 0;
-        }
+        .user-email { font-size: 14px; color: #a0a0b0; }
+        .logout-btn { background: #666; width: auto; padding: 8px 16px; font-size: 14px; margin: 0; }
         .logout-btn:hover { background: #555; }
         .track-item {
             padding: 20px; 
@@ -79,40 +67,46 @@
             margin: 15px 0; 
             border-radius: 12px;
         }
-        .track-title { 
-            font-weight: 600; 
-            font-size: 18px;
-            margin-bottom: 8px; 
-        }
-        .track-description {
-            font-size: 14px;
-            color: #a0a0b0;
-            margin-bottom: 8px;
-            font-style: italic;
-            line-height: 1.5;
-        }
-        .track-meta { 
-            font-size: 14px; 
-            color: #6c6c7d;
-            margin-bottom: 8px;
-        }
-        .track-link { 
-            font-size: 12px; 
-            color: #6c6c7d; 
-            word-break: break-all;
-            font-family: monospace;
-            margin-bottom: 15px;
-        }
-        .track-actions { 
-            display: flex; 
-            gap: 10px; 
+        .track-title { font-weight: 600; font-size: 18px; margin-bottom: 8px; }
+        .track-description { font-size: 14px; color: #a0a0b0; margin-bottom: 8px; font-style: italic; line-height: 1.5; }
+        .track-meta { font-size: 14px; color: #6c6c7d; margin-bottom: 8px; }
+        .track-link { font-size: 12px; color: #6c6c7d; word-break: break-all; font-family: monospace; margin-bottom: 15px; }
+        
+        /* Статистика */
+        .stats-row {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
             flex-wrap: wrap;
-            margin-top: 15px;
         }
-        .track-actions button {
+        .stat-card {
             flex: 1;
             min-width: 120px;
+            background: rgba(255,255,255,0.08);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
         }
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #e94560;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #a0a0b0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-icon {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .track-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+        .track-actions button { flex: 1; min-width: 120px; }
         .btn-copy { background: #4CAF50; }
         .btn-copy:hover { background: #45a049; }
         .btn-edit { background: #FF9800; }
@@ -123,14 +117,8 @@
         .btn-cancel:hover { background: #616161; }
         .btn-delete { background: #8b0000; }
         .btn-delete:hover { background: #a00000; }
-        .field-label {
-            font-size: 14px;
-            color: #a0a0b0;
-            margin-bottom: 5px;
-            display: block;
-        }
+        .field-label { font-size: 14px; color: #a0a0b0; margin-bottom: 5px; display: block; }
         
-        /* Стили для QR-кода */
         .qr-section {
             margin: 20px 0;
             padding: 20px;
@@ -138,43 +126,15 @@
             border-radius: 12px;
             border: 1px solid rgba(255,255,255,0.1);
         }
-        .qr-label {
-            font-size: 13px;
-            color: #a0a0b0;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        .qr-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        .qr-code-container {
-            background: white;
-            padding: 15px;
-            border-radius: 12px;
-            display: inline-block;
-        }
-        .qr-code-container img {
-            display: block;
-            width: 150px;
-            height: 150px;
-        }
-        .qr-actions {
-            display: flex;
-            gap: 10px;
-            flex-direction: column;
-            min-width: 180px;
-        }
-        .qr-actions button {
-            width: 100%;
-        }
+        .qr-label { font-size: 13px; color: #a0a0b0; margin-bottom: 15px; text-align: center; }
+        .qr-wrapper { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; }
+        .qr-code-container { background: white; padding: 15px; border-radius: 12px; display: inline-block; }
+        .qr-code-container img { display: block; width: 150px; height: 150px; }
+        .qr-actions { display: flex; gap: 10px; flex-direction: column; min-width: 180px; }
+        .qr-actions button { width: 100%; }
         .btn-qr-download { background: #2196F3; }
         .btn-qr-download:hover { background: #1976D2; }
         
-        /* Стили для редактирования */
         .edit-form {
             background: rgba(255,255,255,0.08);
             padding: 20px;
@@ -182,22 +142,25 @@
             margin: 15px 0;
             border: 1px solid rgba(255,255,255,0.1);
         }
-        .edit-form input,
-        .edit-form textarea {
-            background: rgba(255,255,255,0.15);
-            margin-bottom: 12px;
+        .edit-form input, .edit-form textarea { background: rgba(255,255,255,0.15); margin-bottom: 12px; }
+        .edit-form .field-label { color: #d0d0e0; font-weight: 600; }
+        .edit-actions { display: flex; gap: 10px; margin-top: 15px; }
+        .edit-actions button { flex: 1; }
+        
+        /* Общая статистика */
+        .total-stats {
+            background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(22, 33, 62, 0.5));
+            padding: 25px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(233, 69, 96, 0.3);
         }
-        .edit-form .field-label {
-            color: #d0d0e0;
-            font-weight: 600;
+        .total-stats h3 {
+            margin: 0 0 15px 0;
+            font-size: 18px;
         }
-        .edit-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .edit-actions button {
-            flex: 1;
+        .total-stats .stats-row {
+            margin: 0;
         }
     </style>
 </head>
@@ -219,6 +182,28 @@
                 <div class="user-email" id="userEmail">—</div>
             </div>
             <button class="logout-btn" onclick="logout()">Выйти</button>
+        </div>
+        
+        <!-- Общая статистика -->
+        <div class="total-stats" id="totalStats">
+            <h3>📊 Общая статистика</h3>
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-icon">🎵</div>
+                    <div class="stat-value" id="totalTracks">0</div>
+                    <div class="stat-label">Всего треков</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">▶️</div>
+                    <div class="stat-value" id="totalPlays">0</div>
+                    <div class="stat-label">Всего прослушиваний</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-value" id="topTrack">—</div>
+                    <div class="stat-label">Самый популярный</div>
+                </div>
+            </div>
         </div>
         
         <h2>Добавить трек</h2>
@@ -248,7 +233,6 @@
     <script type="module">
         import { supabase } from './supabase-config.js';
 
-        // Вход
         window.login = async () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
@@ -261,7 +245,6 @@
             }
         };
 
-        // Выход
         window.logout = async () => {
             const { error } = await supabase.auth.signOut();
             if (error) {
@@ -269,7 +252,6 @@
             }
         };
 
-        // Отслеживание авторизации
         supabase.auth.onAuthStateChange((event, session) => {
             if (session && session.user) {
                 document.getElementById('loginForm').classList.add('hidden');
@@ -282,12 +264,24 @@
             }
         });
 
-        // Функция генерации URL QR-кода
         function getQRUrl(text, size = 200) {
             return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}&margin=10&color=000000&bgcolor=ffffff`;
         }
 
-        // Загрузка списка треков
+        // Форматирование даты
+        function formatDate(dateStr) {
+            if (!dateStr) return '—';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('ru-RU', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Загрузка списка треков и статистики
         async function loadTracks() {
             const { data: tracks, error } = await supabase
                 .from('tracks')
@@ -298,6 +292,9 @@
                 console.error('Ошибка загрузки:', error);
                 return;
             }
+            
+            // Обновляем общую статистику
+            updateTotalStats(tracks);
             
             const list = document.getElementById('tracksList');
             if (!tracks || tracks.length === 0) {
@@ -313,16 +310,33 @@
                     ? `<div class="track-description">"${t.description}"</div>` 
                     : '';
                 const qrUrl = getQRUrl(trackLink, 200);
+                const playCount = t.play_count || 0;
+                const lastPlayed = formatDate(t.last_played_at);
                 
                 return `
                     <div class="track-item" id="track-${t.id}">
                         <div class="track-title">${t.title}</div>
                         ${descriptionHtml}
                         <div class="track-meta">${t.price} руб, ${t.duration_days} дней</div>
+                        
+                        <!-- Статистика трека -->
+                        <div class="stats-row">
+                            <div class="stat-card">
+                                <div class="stat-icon">▶️</div>
+                                <div class="stat-value">${playCount}</div>
+                                <div class="stat-label">Прослушиваний</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">🕐</div>
+                                <div class="stat-value" style="font-size: 14px;">${lastPlayed}</div>
+                                <div class="stat-label">Последнее прослушивание</div>
+                            </div>
+                        </div>
+                        
                         <div class="track-link">${trackLink}</div>
                         
                         <div class="qr-section">
-                            <div class="qr-label">📱 QR-код для быстрого доступа</div>
+                            <div class="qr-label"> QR-код для быстрого доступа</div>
                             <div class="qr-wrapper">
                                 <div class="qr-code-container">
                                     <img src="${qrUrl}" alt="QR-код" crossorigin="anonymous">
@@ -352,7 +366,21 @@
             }).join('');
         }
 
-        // Показать форму редактирования
+        // Обновление общей статистики
+        function updateTotalStats(tracks) {
+            const totalTracks = tracks.length;
+            const totalPlays = tracks.reduce((sum, t) => sum + (t.play_count || 0), 0);
+            
+            // Находим самый популярный трек
+            let topTrack = tracks.reduce((max, t) => {
+                return (t.play_count || 0) > (max.play_count || 0) ? t : max;
+            }, tracks[0] || { play_count: 0, title: '—' });
+            
+            document.getElementById('totalTracks').textContent = totalTracks;
+            document.getElementById('totalPlays').textContent = totalPlays;
+            document.getElementById('topTrack').textContent = topTrack.play_count > 0 ? topTrack.title : '—';
+        }
+
         window.showEditForm = (id, title, description, price, days) => {
             const trackItem = document.getElementById(`track-${id}`);
             const existingForm = trackItem.querySelector('.edit-form');
@@ -386,7 +414,6 @@
             trackItem.appendChild(form);
         };
 
-        // Сохранить изменения
         window.saveTrack = async (id) => {
             const title = document.getElementById(`edit-title-${id}`).value.trim();
             const description = document.getElementById(`edit-description-${id}`).value.trim();
@@ -429,7 +456,6 @@
             }
         };
 
-        // Копирование ссылки
         window.copyLink = async (link, title) => {
             try {
                 await navigator.clipboard.writeText(link);
@@ -454,7 +480,6 @@
             }
         };
 
-        // Скачать QR-код
         window.downloadQR = async (qrUrl, title) => {
             try {
                 const response = await fetch(qrUrl);
@@ -473,7 +498,6 @@
             }
         };
 
-        // Переключение активности
         window.toggleTrack = async (id, active) => {
             const { error } = await supabase
                 .from('tracks')
@@ -487,7 +511,6 @@
             }
         };
 
-        // Удаление трека
         window.deleteTrack = async (id) => {
             if (!confirm('Удалить этот трек?')) return;
             
@@ -503,7 +526,6 @@
             }
         };
 
-        // Загрузка трека
         window.uploadTrack = async () => {
             const status = document.getElementById('status');
             const uploadBtn = document.getElementById('uploadBtn');
@@ -523,7 +545,6 @@
 
             try {
                 const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
-                console.log('📤 Загрузка файла:', fileName);
                 
                 const { error: uploadError, data } = await supabase.storage
                     .from('tracks')
@@ -538,7 +559,7 @@
                     .from('tracks')
                     .getPublicUrl(fileName);
 
-                const { error: dbError, data: dbData } = await supabase
+                const { error: dbError } = await supabase
                     .from('tracks')
                     .insert({
                         title,
@@ -546,9 +567,9 @@
                         price,
                         duration_days: days,
                         file_url: publicUrl,
-                        active: true
-                    })
-                    .select();
+                        active: true,
+                        play_count: 0
+                    });
 
                 if (dbError) throw dbError;
 
