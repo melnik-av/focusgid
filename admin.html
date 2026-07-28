@@ -594,4 +594,174 @@
                 setTimeout(() => {
                     status.textContent = '';
                     status.style.background = 'rgba(255,255,255,0.1)';
-                }, 
+                }, 3000);
+                
+                loadTracks();
+            } catch (e) {
+                status.textContent = '❌ Ошибка: ' + e.message;
+                console.error('Ошибка сохранения:', e);
+            }
+        };
+
+        window.copyLink = async (link, title) => {
+            try {
+                await navigator.clipboard.writeText(link);
+                
+                const status = document.getElementById('status');
+                status.textContent = `✅ Ссылка на "${title}" скопирована!`;
+                status.style.background = 'rgba(76, 175, 80, 0.2)';
+                
+                setTimeout(() => {
+                    status.textContent = '';
+                    status.style.background = 'rgba(255,255,255,0.1)';
+                }, 3000);
+            } catch (err) {
+                const textArea = document.createElement('textarea');
+                textArea.value = link;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                alert('Ссылка скопирована!');
+            }
+        };
+
+        window.downloadQR = async (qrUrl, title) => {
+            try {
+                const response = await fetch(qrUrl);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `QR-${title.replace(/[^a-z0-9а-яё]/gi, '_')}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Ошибка скачивания:', error);
+                window.open(qrUrl, '_blank');
+            }
+        };
+
+        window.toggleTrack = async (id, active) => {
+            const { error } = await supabase
+                .from('tracks')
+                .update({ active })
+                .eq('id', id);
+            
+            if (error) {
+                alert('Ошибка: ' + error.message);
+            } else {
+                loadTracks();
+            }
+        };
+
+        window.deleteTrack = async (id) => {
+            if (!confirm('Удалить этот трек?')) return;
+            
+            const { error } = await supabase
+                .from('tracks')
+                .delete()
+                .eq('id', id);
+            
+            if (error) {
+                alert('Ошибка удаления: ' + error.message);
+            } else {
+                loadTracks();
+            }
+        };
+
+        window.uploadTrack = async () => {
+            const status = document.getElementById('status');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const title = document.getElementById('title').value.trim();
+            const description = document.getElementById('description').value.trim();
+            const price = parseInt(document.getElementById('price').value);
+            const days = parseInt(document.getElementById('days').value);
+            const file = document.getElementById('mp3file').files[0];
+
+            if (!file || !title) { 
+                alert('Заполните название и выберите аудиофайл'); 
+                return; 
+            }
+
+            status.textContent = '⏳ Загрузка аудио...';
+            uploadBtn.disabled = true;
+
+            try {
+                // Загружаем аудио
+                const audioFileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
+                
+                const { error: audioUploadError } = await supabase.storage
+                    .from('tracks')
+                    .upload(audioFileName, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+                
+                if (audioUploadError) throw audioUploadError;
+
+                const { data: { publicUrl: audioUrl } } = supabase.storage
+                    .from('tracks')
+                    .getPublicUrl(audioFileName);
+
+                // Загружаем обложку если есть
+                let coverUrl = null;
+                if (selectedCoverFile) {
+                    status.textContent = '📤 Загрузка обложки...';
+                    
+                    const coverFileName = `cover_${Date.now()}.jpg`;
+                    const { error: coverUploadError } = await supabase.storage
+                        .from('covers')
+                        .upload(coverFileName, selectedCoverFile, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+                    
+                    if (coverUploadError) throw coverUploadError;
+                    
+                    const { data: { publicUrl: coverPublicUrl } } = supabase.storage
+                        .from('covers')
+                        .getPublicUrl(coverFileName);
+                    
+                    coverUrl = coverPublicUrl;
+                }
+
+                status.textContent = ' Создание записи...';
+                
+                const { error: dbError } = await supabase
+                    .from('tracks')
+                    .insert({
+                        title,
+                        description: description || null,
+                        price,
+                        duration_days: days,
+                        file_url: audioUrl,
+                        cover_url: coverUrl,
+                        active: true,
+                        play_count: 0
+                    });
+
+                if (dbError) throw dbError;
+
+                status.textContent = '✅ Трек добавлен!';
+                
+                // Очищаем форму
+                document.getElementById('title').value = '';
+                document.getElementById('description').value = '';
+                document.getElementById('mp3file').value = '';
+                removeCover();
+                
+                loadTracks();
+            } catch (e) {
+                status.textContent = '❌ Ошибка: ' + e.message;
+                console.error('Ошибка загрузки:', e);
+            } finally {
+                uploadBtn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>
