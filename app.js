@@ -1,28 +1,94 @@
 import { supabase } from './supabase-config.js';
 
-console.log('🚀 ПРИЛОЖЕНИЕ ЗАПУСКАЕТСЯ');
+console.log('🚀 Плеер запущен');
 
+// Элементы DOM
+const coverContainer = document.getElementById('coverContainer');
+const trackTitle = document.getElementById('trackTitle');
+const trackDescription = document.getElementById('trackDescription');
+const loadingState = document.getElementById('loadingState');
+const keyForm = document.getElementById('keyForm');
+const keyInput = document.getElementById('keyInput');
+const activateBtn = document.getElementById('activateBtn');
+const errorState = document.getElementById('errorState');
+const waveformContainer = document.getElementById('waveformContainer');
+const waveform = document.getElementById('waveform');
+const currentTimeEl = document.getElementById('currentTime');
+const totalTimeEl = document.getElementById('totalTime');
 const playBtn = document.getElementById('playBtn');
-const statusEl = document.getElementById('status');
-const titleEl = document.getElementById('trackTitle');
-const descriptionBlock = document.getElementById('descriptionBlock');
-const descriptionText = document.getElementById('trackDescription');
 
 let audio = null;
 let isPlaying = false;
 let currentTrackId = null;
-let playCounted = false; // Чтобы не считать одно прослушивание дважды
+let playCounted = false;
+let waveBars = [];
+const WAVE_BARS_COUNT = 60;
 
-async function init() {
-    console.log('📡 Загрузка трека из Supabase...');
-    statusEl.textContent = 'Подключение...';
+// Форматирование времени
+function formatTime(seconds) {
+    if (isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Генерация вейвформы (случайные высоты)
+function generateWaveform() {
+    waveform.innerHTML = '';
+    waveBars = [];
     
+    for (let i = 0; i < WAVE_BARS_COUNT; i++) {
+        const bar = document.createElement('div');
+        bar.className = 'wave-bar';
+        // Случайная высота от 20% до 100%
+        const height = 20 + Math.random() * 80;
+        bar.style.height = `${height}%`;
+        waveform.appendChild(bar);
+        waveBars.push(bar);
+    }
+}
+
+// Обновление вейвформы по прогрессу
+function updateWaveform(progress) {
+    const activeCount = Math.floor(progress * waveBars.length);
+    
+    waveBars.forEach((bar, index) => {
+        if (index < activeCount) {
+            bar.classList.add('active');
+        } else {
+            bar.classList.remove('active');
+        }
+    });
+}
+
+// Показать ошибку
+function showError(message) {
+    loadingState.classList.add('hidden');
+    keyForm.classList.add('hidden');
+    errorState.classList.remove('hidden');
+    errorState.textContent = message;
+}
+
+// Показать форму ключа
+function showKeyForm(message = null) {
+    loadingState.classList.add('hidden');
+    if (message) {
+        errorState.classList.remove('hidden');
+        errorState.textContent = message;
+    }
+    keyForm.classList.remove('hidden');
+}
+
+// Скрыть все состояния
+function hideAllStates() {
+    loadingState.classList.add('hidden');
+    keyForm.classList.add('hidden');
+    errorState.classList.add('hidden');
+}
+
+// Загрузка трека
+async function loadTrack(trackId = null) {
     try {
-        const params = new URLSearchParams(window.location.search);
-        const trackId = params.get('track');
-        
-        console.log(' Track ID из URL:', trackId);
-        
         let query = supabase.from('tracks').select('*').eq('active', true);
         
         if (trackId) {
@@ -31,73 +97,132 @@ async function init() {
         
         const { data, error } = await query.limit(1);
         
-        if (error) {
-            console.error(' Ошибка Supabase:', error);
-            statusEl.textContent = 'Ошибка БД: ' + error.message;
-            return;
-        }
-        
+        if (error) throw error;
         if (!data || data.length === 0) {
-            statusEl.textContent = '⚠️ Нет доступных треков';
+            showError('Трек не найден или недоступен');
             return;
         }
         
         const track = data[0];
         currentTrackId = track.id;
-        console.log('✅ Трек найден:');
-        console.log('  ID:', track.id);
-        console.log('  Название:', track.title);
-        console.log('  Описание:', track.description);
-        console.log('  URL:', track.file_url);
-        console.log('  Прослушиваний:', track.play_count || 0);
         
-        titleEl.textContent = track.title || 'Аудиопрогулка';
+        // Устанавливаем данные
+        trackTitle.textContent = track.title || 'Аудиопрогулка';
         
         if (track.description && track.description.trim()) {
-            descriptionText.textContent = track.description;
-            descriptionBlock.style.display = 'block';
-        } else {
-            descriptionBlock.style.display = 'none';
+            trackDescription.textContent = track.description;
+            trackDescription.classList.remove('hidden');
         }
         
-        statusEl.textContent = 'Загрузка аудио...';
+        // Обложка (если есть cover_url)
+        if (track.cover_url) {
+            coverContainer.innerHTML = `<img src="${track.cover_url}" alt="${track.title}">`;
+        }
         
-        const fileUrl = track.file_url + '?t=' + Date.now();
-        console.log('🎵 Финальный URL:', fileUrl);
+        console.log('✅ Трек загружен:', track.title);
         
-        audio = new Audio(fileUrl);
+        // Загружаем аудио
+        await loadAudio(track.file_url);
         
-        audio.addEventListener('canplay', () => {
-            console.log('✅ Аудио готово к воспроизведению');
-            statusEl.textContent = '✅ Готово к воспроизведению';
-            playBtn.disabled = false;
-            playBtn.textContent = '▶ Играть';
+    } catch (error) {
+        console.error('Ошибка загрузки трека:', error);
+        showError('Ошибка загрузки: ' + error.message);
+    }
+}
+
+// Загрузка аудио
+async function loadAudio(fileUrl) {
+    try {
+        const url = fileUrl + '?t=' + Date.now();
+        
+        audio = new Audio(url);
+        audio.preload = 'auto';
+        
+        // Метаданные загружены
+        audio.addEventListener('loadedmetadata', () => {
+            console.log(' Длительность:', audio.duration, 'сек');
+            totalTimeEl.textContent = formatTime(audio.duration);
         });
         
+        // Можно играть
+        audio.addEventListener('canplay', () => {
+            console.log('✅ Аудио готово');
+            hideAllStates();
+            generateWaveform();
+            waveformContainer.classList.remove('hidden');
+            playBtn.classList.remove('hidden');
+            playBtn.disabled = false;
+            playBtn.textContent = 'Играть';
+        });
+        
+        // Обновление времени
+        audio.addEventListener('timeupdate', () => {
+            currentTimeEl.textContent = formatTime(audio.currentTime);
+            
+            if (audio.duration) {
+                const progress = audio.currentTime / audio.duration;
+                updateWaveform(progress);
+            }
+        });
+        
+        // Ошибка
         audio.addEventListener('error', (e) => {
             console.error('❌ Ошибка аудио:', e);
             console.error('Код:', audio.error?.code);
             
-            let errorMsg = 'Ошибка загрузки';
-            if (audio.error?.code === 1) errorMsg = 'Ошибка сети';
-            else if (audio.error?.code === 2) errorMsg = 'Файл повреждён';
-            else if (audio.error?.code === 3) errorMsg = 'Ошибка декодирования';
-            else if (audio.error?.code === 4) errorMsg = 'Формат не поддерживается';
+            let msg = 'Ошибка загрузки аудио';
+            if (audio.error?.code === 1) msg = 'Ошибка сети';
+            else if (audio.error?.code === 2) msg = 'Файл повреждён';
+            else if (audio.error?.code === 4) msg = 'Формат не поддерживается';
             
-            statusEl.textContent = '❌ ' + errorMsg;
+            showError(msg);
         });
         
+        // Конец воспроизведения
         audio.addEventListener('ended', () => {
-            console.log('️ Воспроизведение завершено');
             isPlaying = false;
-            playBtn.textContent = '▶ Играть сначала';
+            playBtn.textContent = 'Играть';
+            updateWaveform(1);
         });
         
         audio.load();
         
     } catch (error) {
-        console.error('💥 Критическая ошибка:', error);
-        statusEl.textContent = '❌ ' + error.message;
+        console.error('Ошибка загрузки аудио:', error);
+        showError('Ошибка загрузки аудио');
+    }
+}
+
+// Активация по ключу
+async function activateByKey(key) {
+    try {
+        const { data: purchase, error } = await supabase
+            .from('purchases')
+            .select('*, tracks(*)')
+            .eq('access_key', key.toUpperCase())
+            .eq('payment_status', 'completed')
+            .single();
+        
+        if (error || !purchase) {
+            showKeyForm('❌ Неверный ключ доступа');
+            return;
+        }
+        
+        // Проверка срока действия
+        if (purchase.expires_at && new Date(purchase.expires_at) < new Date()) {
+            showKeyForm('⏰ Срок аренды истек');
+            return;
+        }
+        
+        // Сохраняем ключ
+        localStorage.setItem('accessKey', key.toUpperCase());
+        
+        console.log('✅ Ключ активирован');
+        await loadTrack(purchase.track_id);
+        
+    } catch (e) {
+        console.error('Ошибка активации:', e);
+        showKeyForm('Ошибка активации');
     }
 }
 
@@ -106,55 +231,73 @@ async function incrementPlayCount() {
     if (!currentTrackId || playCounted) return;
     
     try {
-        console.log(' Увеличиваем счетчик прослушиваний...');
-        
-        // Вызываем RPC функцию
         const { error } = await supabase.rpc('increment_play_count', {
             track_id: currentTrackId
         });
         
         if (error) {
-            console.error('❌ Ошибка увеличения счетчика:', error);
+            console.error('Ошибка счетчика:', error);
         } else {
+            playCounted = true;
             console.log('✅ Счетчик увеличен');
-            playCounted = true; // Помечаем что уже посчитали
         }
     } catch (e) {
-        console.error('💥 Ошибка статистики:', e);
+        console.error('Ошибка статистики:', e);
     }
 }
 
 // Обработчик кнопки Play/Pause
 playBtn.addEventListener('click', async () => {
-    console.log('👆 Клик по кнопке, isPlaying:', isPlaying);
-    
-    if (!audio) {
-        console.error('❌ Audio объект не создан');
-        statusEl.textContent = '❌ Аудио не загружено';
-        return;
-    }
+    if (!audio) return;
     
     if (isPlaying) {
-        console.log('⏸ Пауза');
         audio.pause();
-        playBtn.textContent = '▶ Продолжить';
+        playBtn.textContent = 'Играть';
         isPlaying = false;
     } else {
-        console.log('▶ Запуск воспроизведения...');
         try {
             await audio.play();
-            playBtn.textContent = ' Пауза';
+            playBtn.textContent = 'Пауза';
             isPlaying = true;
-            console.log('✅ Воспроизведение началось');
-            
-            // Увеличиваем счетчик при первом запуске
             await incrementPlayCount();
         } catch (e) {
-            console.error('❌ Ошибка play():', e);
-            statusEl.textContent = '❌ Нажмите ещё раз';
+            console.error('Ошибка play():', e);
         }
     }
 });
 
-console.log('🚀 Инициализация...');
+// Обработчик активации ключа
+activateBtn.addEventListener('click', () => {
+    const key = keyInput.value.trim();
+    if (key) {
+        activateByKey(key);
+    }
+});
+
+keyInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        activateBtn.click();
+    }
+});
+
+// Инициализация
+async function init() {
+    const params = new URLSearchParams(window.location.search);
+    const trackId = params.get('track');
+    const accessKey = params.get('key') || localStorage.getItem('accessKey');
+    
+    console.log('Track ID:', trackId);
+    console.log('Ключ:', accessKey ? 'Есть' : 'Нет');
+    
+    if (accessKey) {
+        await activateByKey(accessKey);
+    } else if (trackId) {
+        // Если есть trackId но нет ключа - пробуем загрузить трек
+        // (для админского тестирования или публичных треков)
+        await loadTrack(trackId);
+    } else {
+        showKeyForm('Введите ключ доступа для прослушивания');
+    }
+}
+
 init();
