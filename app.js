@@ -2,7 +2,6 @@ import { supabase } from './supabase-config.js';
 
 console.log('🚀 Плеер запущен');
 
-// Элементы DOM
 const coverContainer = document.getElementById('coverContainer');
 const trackTitle = document.getElementById('trackTitle');
 const trackDescription = document.getElementById('trackDescription');
@@ -16,6 +15,7 @@ const waveform = document.getElementById('waveform');
 const currentTimeEl = document.getElementById('currentTime');
 const totalTimeEl = document.getElementById('totalTime');
 const playBtn = document.getElementById('playBtn');
+const buttonText = document.getElementById('buttonText');
 
 let audio = null;
 let isPlaying = false;
@@ -23,6 +23,30 @@ let currentTrackId = null;
 let playCounted = false;
 let waveBars = [];
 const WAVE_BARS_COUNT = 60;
+
+// Показать спиннер на кнопке
+function showLoadingSpinner() {
+    playBtn.classList.remove('hidden');
+    playBtn.disabled = true;
+    buttonText.style.display = 'none';
+    
+    // Удаляем старый спиннер если есть
+    const oldSpinner = playBtn.querySelector('.spinner');
+    if (oldSpinner) oldSpinner.remove();
+    
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner';
+    playBtn.appendChild(spinner);
+}
+
+// Показать текст на кнопке
+function showButtonText(text) {
+    const spinner = playBtn.querySelector('.spinner');
+    if (spinner) spinner.remove();
+    
+    buttonText.textContent = text;
+    buttonText.style.display = 'inline-block';
+}
 
 // Форматирование времени
 function formatTime(seconds) {
@@ -32,7 +56,7 @@ function formatTime(seconds) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-// Генерация вейвформы (случайные высоты)
+// Генерация вейвформы
 function generateWaveform() {
     waveform.innerHTML = '';
     waveBars = [];
@@ -40,7 +64,6 @@ function generateWaveform() {
     for (let i = 0; i < WAVE_BARS_COUNT; i++) {
         const bar = document.createElement('div');
         bar.className = 'wave-bar';
-        // Случайная высота от 20% до 100%
         const height = 20 + Math.random() * 80;
         bar.style.height = `${height}%`;
         waveform.appendChild(bar);
@@ -48,7 +71,7 @@ function generateWaveform() {
     }
 }
 
-// Обновление вейвформы по прогрессу
+// Обновление вейвформы
 function updateWaveform(progress) {
     const activeCount = Math.floor(progress * waveBars.length);
     
@@ -61,17 +84,18 @@ function updateWaveform(progress) {
     });
 }
 
-// Показать ошибку
 function showError(message) {
     loadingState.classList.add('hidden');
     keyForm.classList.add('hidden');
+    playBtn.classList.add('hidden');
+    waveformContainer.classList.add('hidden');
     errorState.classList.remove('hidden');
     errorState.textContent = message;
 }
 
-// Показать форму ключа
 function showKeyForm(message = null) {
     loadingState.classList.add('hidden');
+    playBtn.classList.add('hidden');
     if (message) {
         errorState.classList.remove('hidden');
         errorState.textContent = message;
@@ -79,7 +103,6 @@ function showKeyForm(message = null) {
     keyForm.classList.remove('hidden');
 }
 
-// Скрыть все состояния
 function hideAllStates() {
     loadingState.classList.add('hidden');
     keyForm.classList.add('hidden');
@@ -106,7 +129,6 @@ async function loadTrack(trackId = null) {
         const track = data[0];
         currentTrackId = track.id;
         
-        // Устанавливаем данные
         trackTitle.textContent = track.title || 'Аудиопрогулка';
         
         if (track.description && track.description.trim()) {
@@ -114,14 +136,14 @@ async function loadTrack(trackId = null) {
             trackDescription.classList.remove('hidden');
         }
         
-        // Обложка (если есть cover_url)
         if (track.cover_url) {
             coverContainer.innerHTML = `<img src="${track.cover_url}" alt="${track.title}">`;
         }
         
         console.log('✅ Трек загружен:', track.title);
         
-        // Загружаем аудио
+        // Показываем спиннер и начинаем загрузку аудио
+        showLoadingSpinner();
         await loadAudio(track.file_url);
         
     } catch (error) {
@@ -138,24 +160,22 @@ async function loadAudio(fileUrl) {
         audio = new Audio(url);
         audio.preload = 'auto';
         
-        // Метаданные загружены
         audio.addEventListener('loadedmetadata', () => {
             console.log(' Длительность:', audio.duration, 'сек');
             totalTimeEl.textContent = formatTime(audio.duration);
         });
         
-        // Можно играть
         audio.addEventListener('canplay', () => {
-            console.log('✅ Аудио готово');
+            console.log('✅ Аудио готово к воспроизведению');
             hideAllStates();
             generateWaveform();
             waveformContainer.classList.remove('hidden');
-            playBtn.classList.remove('hidden');
+            
+            // Убираем спиннер и показываем "Играть"
+            showButtonText('Играть');
             playBtn.disabled = false;
-            playBtn.textContent = 'Играть';
         });
         
-        // Обновление времени
         audio.addEventListener('timeupdate', () => {
             currentTimeEl.textContent = formatTime(audio.currentTime);
             
@@ -165,7 +185,6 @@ async function loadAudio(fileUrl) {
             }
         });
         
-        // Ошибка
         audio.addEventListener('error', (e) => {
             console.error('❌ Ошибка аудио:', e);
             console.error('Код:', audio.error?.code);
@@ -178,10 +197,9 @@ async function loadAudio(fileUrl) {
             showError(msg);
         });
         
-        // Конец воспроизведения
         audio.addEventListener('ended', () => {
             isPlaying = false;
-            playBtn.textContent = 'Играть';
+            showButtonText('Играть');
             updateWaveform(1);
         });
         
@@ -208,13 +226,11 @@ async function activateByKey(key) {
             return;
         }
         
-        // Проверка срока действия
         if (purchase.expires_at && new Date(purchase.expires_at) < new Date()) {
             showKeyForm('⏰ Срок аренды истек');
             return;
         }
         
-        // Сохраняем ключ
         localStorage.setItem('accessKey', key.toUpperCase());
         
         console.log('✅ Ключ активирован');
@@ -226,7 +242,7 @@ async function activateByKey(key) {
     }
 }
 
-// Увеличение счетчика прослушиваний
+// Увеличение счетчика
 async function incrementPlayCount() {
     if (!currentTrackId || playCounted) return;
     
@@ -248,16 +264,16 @@ async function incrementPlayCount() {
 
 // Обработчик кнопки Play/Pause
 playBtn.addEventListener('click', async () => {
-    if (!audio) return;
+    if (!audio || playBtn.disabled) return;
     
     if (isPlaying) {
         audio.pause();
-        playBtn.textContent = 'Играть';
+        showButtonText('Играть');
         isPlaying = false;
     } else {
         try {
             await audio.play();
-            playBtn.textContent = 'Пауза';
+            showButtonText('Пауза');
             isPlaying = true;
             await incrementPlayCount();
         } catch (e) {
@@ -292,8 +308,6 @@ async function init() {
     if (accessKey) {
         await activateByKey(accessKey);
     } else if (trackId) {
-        // Если есть trackId но нет ключа - пробуем загрузить трек
-        // (для админского тестирования или публичных треков)
         await loadTrack(trackId);
     } else {
         showKeyForm('Введите ключ доступа для прослушивания');
