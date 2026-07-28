@@ -31,7 +31,6 @@
             padding: 20px 0;
         }
         
-        /* Обложка */
         .cover-container {
             width: 220px;
             height: 220px;
@@ -59,7 +58,6 @@
             font-size: 60px;
         }
         
-        /* Заголовок */
         .track-title {
             font-size: 26px;
             font-weight: 700;
@@ -69,7 +67,6 @@
             line-height: 1.2;
         }
         
-        /* Описание */
         .track-description {
             font-size: 15px;
             color: #666666;
@@ -79,7 +76,6 @@
             padding: 0 10px;
         }
         
-        /* Вейвформа */
         .waveform-container {
             width: 100%;
             padding: 0 10px;
@@ -116,7 +112,7 @@
             font-variant-numeric: tabular-nums;
         }
         
-        /* Кнопка Play/Pause */
+        /* Кнопка Play/Pause/Loading */
         .play-button {
             width: 100%;
             max-width: 320px;
@@ -131,6 +127,11 @@
             transition: all 0.2s;
             -webkit-tap-highlight-color: transparent;
             letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 64px;
+            position: relative;
         }
         
         .play-button:hover:not(:disabled) {
@@ -147,7 +148,25 @@
             cursor: not-allowed;
         }
         
-        /* Состояния загрузки */
+        /* Спиннер загрузки */
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Текст кнопки */
+        .button-text {
+            display: inline-block;
+        }
+        
         .loading-state {
             text-align: center;
             color: #666666;
@@ -161,9 +180,9 @@
             background: rgba(233, 69, 96, 0.1);
             border-radius: 12px;
             margin: 20px 0;
+            width: 100%;
         }
         
-        /* Форма ввода ключа */
         .key-form {
             width: 100%;
             padding: 20px;
@@ -209,7 +228,6 @@
             cursor: pointer;
         }
         
-        /* Скрытые элементы */
         .hidden { display: none !important; }
         
         @media (max-width: 480px) {
@@ -230,33 +248,26 @@
 </head>
 <body>
     <div class="player">
-        <!-- Обложка -->
         <div class="cover-container" id="coverContainer">
-            <div class="cover-placeholder">🎧</div>
+            <div class="cover-placeholder"></div>
         </div>
         
-        <!-- Заголовок -->
         <h1 class="track-title" id="trackTitle">Загрузка...</h1>
         
-        <!-- Описание -->
         <p class="track-description hidden" id="trackDescription"></p>
         
-        <!-- Состояние загрузки -->
         <div class="loading-state" id="loadingState">
             Подключение...
         </div>
         
-        <!-- Форма ввода ключа -->
         <div class="key-form hidden" id="keyForm">
             <p>Введите ключ доступа для прослушивания:</p>
             <input type="text" id="keyInput" placeholder="XXXXXXXXXXXXXXXX" maxlength="20">
             <button id="activateBtn">Активировать</button>
         </div>
         
-        <!-- Ошибка -->
         <div class="error-state hidden" id="errorState"></div>
         
-        <!-- Вейвформа (скрыта до загрузки) -->
         <div class="waveform-container hidden" id="waveformContainer">
             <div class="waveform" id="waveform"></div>
             <div class="time-display">
@@ -265,9 +276,8 @@
             </div>
         </div>
         
-        <!-- Кнопка Play/Pause (скрыта до загрузки) -->
         <button class="play-button hidden" id="playBtn" disabled>
-            Играть
+            <span class="button-text" id="buttonText">Загрузка...</span>
         </button>
     </div>
 
