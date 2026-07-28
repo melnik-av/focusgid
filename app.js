@@ -89,19 +89,6 @@ function updateProgress() {
     }
 }
 
-// Перемотка по клику на прогресс-бар
-progressBarWrapper.addEventListener('click', (e) => {
-    if (!audio || !audio.duration) return;
-    
-    const rect = progressBarWrapper.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const width = rect.width;
-    const progress = clickX / width;
-    
-    audio.currentTime = progress * audio.duration;
-    updateProgress();
-});
-
 // Загрузка трека
 async function loadTrack(trackId = null) {
     try {
