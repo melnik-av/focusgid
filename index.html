@@ -76,19 +76,25 @@
             padding: 0 10px;
         }
         
+        /* Контейнер вейвформы + времени */
         .waveform-container {
             width: 100%;
             padding: 0 10px;
             margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
         
+        /* Вейвформа */
         .waveform {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 2px;
             height: 40px;
-            margin-bottom: 10px;
+            flex: 1;
+            margin: 0;
         }
         
         .wave-bar {
@@ -103,13 +109,35 @@
             background: #1a1a1a;
         }
         
+        /* Время слева и справа от вейвформы */
         .time-display {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
             font-size: 14px;
             color: #666666;
             font-variant-numeric: tabular-nums;
+            min-width: 50px;
+            height: 40px;
+        }
+        
+        .time-display span {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+        
+        /* Левое время */
+        .time-current {
+            text-align: right;
+            justify-content: flex-end;
+        }
+        
+        /* Правое время */
+        .time-total {
+            text-align: left;
+            justify-content: flex-start;
         }
         
         /* Кнопка Play/Pause/Loading */
@@ -243,6 +271,15 @@
             .track-description {
                 font-size: 14px;
             }
+            
+            .waveform-container {
+                gap: 10px;
+            }
+            
+            .time-display {
+                min-width: 40px;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
@@ -269,9 +306,11 @@
         <div class="error-state hidden" id="errorState"></div>
         
         <div class="waveform-container hidden" id="waveformContainer">
-            <div class="waveform" id="waveform"></div>
-            <div class="time-display">
+            <div class="time-display time-current">
                 <span id="currentTime">0:00</span>
+            </div>
+            <div class="waveform" id="waveform"></div>
+            <div class="time-display time-total">
                 <span id="totalTime">0:00</span>
             </div>
         </div>
