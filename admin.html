@@ -72,7 +72,6 @@
         .track-meta { font-size: 14px; color: #6c6c7d; margin-bottom: 8px; }
         .track-link { font-size: 12px; color: #6c6c7d; word-break: break-all; font-family: monospace; margin-bottom: 15px; }
         
-        /* Статистика */
         .stats-row {
             display: flex;
             gap: 15px;
@@ -88,22 +87,9 @@
             text-align: center;
             border: 1px solid rgba(255,255,255,0.1);
         }
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: #e94560;
-            margin-bottom: 5px;
-        }
-        .stat-label {
-            font-size: 12px;
-            color: #a0a0b0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .stat-icon {
-            font-size: 20px;
-            margin-bottom: 5px;
-        }
+        .stat-value { font-size: 28px; font-weight: 700; color: #e94560; margin-bottom: 5px; }
+        .stat-label { font-size: 12px; color: #a0a0b0; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-icon { font-size: 20px; margin-bottom: 5px; }
         
         .track-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
         .track-actions button { flex: 1; min-width: 120px; }
@@ -147,7 +133,6 @@
         .edit-actions { display: flex; gap: 10px; margin-top: 15px; }
         .edit-actions button { flex: 1; }
         
-        /* Общая статистика */
         .total-stats {
             background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(22, 33, 62, 0.5));
             padding: 25px;
@@ -155,12 +140,62 @@
             margin-bottom: 25px;
             border: 1px solid rgba(233, 69, 96, 0.3);
         }
-        .total-stats h3 {
-            margin: 0 0 15px 0;
-            font-size: 18px;
+        .total-stats h3 { margin: 0 0 15px 0; font-size: 18px; }
+        .total-stats .stats-row { margin: 0; }
+        
+        /* Стили для загрузки обложки */
+        .cover-upload {
+            margin: 15px 0;
         }
-        .total-stats .stats-row {
-            margin: 0;
+        .cover-preview {
+            width: 150px;
+            height: 150px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+            border: 2px dashed rgba(255,255,255,0.3);
+        }
+        .cover-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .cover-preview-placeholder {
+            color: #a0a0b0;
+            font-size: 14px;
+            text-align: center;
+            padding: 20px;
+        }
+        .cover-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .cover-actions button {
+            flex: 1;
+        }
+        .btn-remove-cover {
+            background: #8b0000;
+        }
+        .btn-remove-cover:hover {
+            background: #a00000;
+        }
+        
+        /* Миниатюра в списке треков */
+        .track-cover-thumb {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .track-cover-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
     </style>
 </head>
@@ -214,6 +249,23 @@
         <label class="field-label">Описание (аннотация)</label>
         <textarea id="description" placeholder="2-3 предложения о прогулке..."></textarea>
         
+        <!-- Загрузка обложки -->
+        <div class="cover-upload">
+            <label class="field-label">Обложка трека</label>
+            <div class="cover-preview" id="coverPreview">
+                <div class="cover-preview-placeholder">📷<br>Загрузите обложку</div>
+            </div>
+            <input type="file" id="coverFile" accept="image/*" style="display: none;">
+            <div class="cover-actions">
+                <button onclick="document.getElementById('coverFile').click()" style="background: #2196F3;">
+                     Выбрать обложку
+                </button>
+                <button class="btn-remove-cover" onclick="removeCover()">
+                    🗑️ Удалить
+                </button>
+            </div>
+        </div>
+        
         <label class="field-label">Цена (руб)</label>
         <input type="number" id="price" placeholder="500" value="500">
         
@@ -232,6 +284,9 @@
 
     <script type="module">
         import { supabase } from './supabase-config.js';
+
+        let selectedCoverFile = null;
+        let selectedCoverUrl = null;
 
         window.login = async () => {
             const email = document.getElementById('email').value;
@@ -264,11 +319,34 @@
             }
         });
 
+        // Обработка выбора обложки
+        document.getElementById('coverFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                selectedCoverFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    selectedCoverUrl = e.target.result;
+                    document.getElementById('coverPreview').innerHTML = 
+                        `<img src="${selectedCoverUrl}" alt="Обложка">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Удалить обложку
+        window.removeCover = () => {
+            selectedCoverFile = null;
+            selectedCoverUrl = null;
+            document.getElementById('coverFile').value = '';
+            document.getElementById('coverPreview').innerHTML = 
+                '<div class="cover-preview-placeholder">📷<br>Загрузите обложку</div>';
+        };
+
         function getQRUrl(text, size = 200) {
             return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}&margin=10&color=000000&bgcolor=ffffff`;
         }
 
-        // Форматирование даты
         function formatDate(dateStr) {
             if (!dateStr) return '—';
             const date = new Date(dateStr);
@@ -281,7 +359,6 @@
             });
         }
 
-        // Загрузка списка треков и статистики
         async function loadTracks() {
             const { data: tracks, error } = await supabase
                 .from('tracks')
@@ -293,7 +370,6 @@
                 return;
             }
             
-            // Обновляем общую статистику
             updateTotalStats(tracks);
             
             const list = document.getElementById('tracksList');
@@ -312,14 +388,17 @@
                 const qrUrl = getQRUrl(trackLink, 200);
                 const playCount = t.play_count || 0;
                 const lastPlayed = formatDate(t.last_played_at);
+                const coverHtml = t.cover_url 
+                    ? `<div class="track-cover-thumb"><img src="${t.cover_url}" alt="${t.title}"></div>`
+                    : '';
                 
                 return `
                     <div class="track-item" id="track-${t.id}">
+                        ${coverHtml}
                         <div class="track-title">${t.title}</div>
                         ${descriptionHtml}
                         <div class="track-meta">${t.price} руб, ${t.duration_days} дней</div>
                         
-                        <!-- Статистика трека -->
                         <div class="stats-row">
                             <div class="stat-card">
                                 <div class="stat-icon">▶️</div>
@@ -336,7 +415,7 @@
                         <div class="track-link">${trackLink}</div>
                         
                         <div class="qr-section">
-                            <div class="qr-label"> QR-код для быстрого доступа</div>
+                            <div class="qr-label">📱 QR-код для быстрого доступа</div>
                             <div class="qr-wrapper">
                                 <div class="qr-code-container">
                                     <img src="${qrUrl}" alt="QR-код" crossorigin="anonymous">
@@ -346,14 +425,14 @@
                                          Скачать QR
                                     </button>
                                     <button class="btn-copy" onclick="copyLink('${trackLink}', '${t.title.replace(/'/g, "\\'")}')">
-                                        📋 Копировать ссылку
+                                         Копировать ссылку
                                     </button>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="track-actions">
-                            <button class="btn-edit" onclick="showEditForm('${t.id}', '${t.title.replace(/'/g, "\\'")}', '${(t.description || '').replace(/'/g, "\\'")}', ${t.price}, ${t.duration_days})">
+                            <button class="btn-edit" onclick="showEditForm('${t.id}', '${t.title.replace(/'/g, "\\'")}', '${(t.description || '').replace(/'/g, "\\'")}', ${t.price}, ${t.duration_days}, '${t.cover_url || ''}')">
                                 ✏️ Редактировать
                             </button>
                             <button onclick="toggleTrack('${t.id}', ${!t.active})">
@@ -366,12 +445,10 @@
             }).join('');
         }
 
-        // Обновление общей статистики
         function updateTotalStats(tracks) {
             const totalTracks = tracks.length;
             const totalPlays = tracks.reduce((sum, t) => sum + (t.play_count || 0), 0);
             
-            // Находим самый популярный трек
             let topTrack = tracks.reduce((max, t) => {
                 return (t.play_count || 0) > (max.play_count || 0) ? t : max;
             }, tracks[0] || { play_count: 0, title: '—' });
@@ -381,7 +458,7 @@
             document.getElementById('topTrack').textContent = topTrack.play_count > 0 ? topTrack.title : '—';
         }
 
-        window.showEditForm = (id, title, description, price, days) => {
+        window.showEditForm = (id, title, description, price, days, coverUrl) => {
             const trackItem = document.getElementById(`track-${id}`);
             const existingForm = trackItem.querySelector('.edit-form');
             
@@ -389,6 +466,10 @@
                 existingForm.remove();
                 return;
             }
+            
+            const coverPreviewHtml = coverUrl 
+                ? `<img src="${coverUrl}" alt="Обложка" style="width: 100%; height: 100%; object-fit: cover;">`
+                : '<div class="cover-preview-placeholder"><br>Нет обложки</div>';
             
             const form = document.createElement('div');
             form.className = 'edit-form';
@@ -399,6 +480,20 @@
                 <label class="field-label">Описание</label>
                 <textarea id="edit-description-${id}">${description}</textarea>
                 
+                <label class="field-label">Обложка</label>
+                <div class="cover-preview" id="edit-cover-preview-${id}">
+                    ${coverPreviewHtml}
+                </div>
+                <input type="file" id="edit-cover-file-${id}" accept="image/*" style="display: none;">
+                <div class="cover-actions">
+                    <button onclick="document.getElementById('edit-cover-file-${id}').click()" style="background: #2196F3;">
+                        📷 Изменить обложку
+                    </button>
+                    <button class="btn-remove-cover" onclick="removeEditCover('${id}')">
+                        🗑️ Удалить
+                    </button>
+                </div>
+                
                 <label class="field-label">Цена (руб)</label>
                 <input type="number" id="edit-price-${id}" value="${price}">
                 
@@ -406,15 +501,36 @@
                 <input type="number" id="edit-days-${id}" value="${days}">
                 
                 <div class="edit-actions">
-                    <button class="btn-save" onclick="saveTrack('${id}')">💾 Сохранить</button>
+                    <button class="btn-save" onclick="saveTrack('${id}', '${coverUrl}')">💾 Сохранить</button>
                     <button class="btn-cancel" onclick="loadTracks()">Отмена</button>
                 </div>
             `;
             
             trackItem.appendChild(form);
+            
+            // Обработчик изменения обложки в форме редактирования
+            document.getElementById(`edit-cover-file-${id}`).addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        document.getElementById(`edit-cover-preview-${id}`).innerHTML = 
+                            `<img src="${e.target.result}" alt="Обложка">`;
+                        document.getElementById(`edit-cover-file-${id}`).dataset.newCover = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
         };
 
-        window.saveTrack = async (id) => {
+        window.removeEditCover = (id) => {
+            document.getElementById(`edit-cover-preview-${id}`).innerHTML = 
+                '<div class="cover-preview-placeholder">📷<br>Нет обложки</div>';
+            document.getElementById(`edit-cover-file-${id}`).value = '';
+            delete document.getElementById(`edit-cover-file-${id}`).dataset.newCover;
+        };
+
+        window.saveTrack = async (id, oldCoverUrl) => {
             const title = document.getElementById(`edit-title-${id}`).value.trim();
             const description = document.getElementById(`edit-description-${id}`).value.trim();
             const price = parseInt(document.getElementById(`edit-price-${id}`).value);
@@ -429,13 +545,44 @@
             status.textContent = '⏳ Сохранение...';
             
             try {
+                let coverUrl = oldCoverUrl;
+                
+                // Проверяем есть ли новая обложка
+                const coverFileInput = document.getElementById(`edit-cover-file-${id}`);
+                const newCoverData = coverFileInput.dataset.newCover;
+                
+                if (newCoverData) {
+                    status.textContent = ' Загрузка обложки...';
+                    
+                    // Конвертируем base64 в blob
+                    const response = await fetch(newCoverData);
+                    const blob = await response.blob();
+                    
+                    const fileName = `cover_${Date.now()}_${id}.jpg`;
+                    const { error: uploadError, data } = await supabase.storage
+                        .from('covers')
+                        .upload(fileName, blob, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+                    
+                    if (uploadError) throw uploadError;
+                    
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('covers')
+                        .getPublicUrl(fileName);
+                    
+                    coverUrl = publicUrl;
+                }
+                
                 const { error } = await supabase
                     .from('tracks')
                     .update({
                         title,
                         description: description || null,
                         price,
-                        duration_days: days
+                        duration_days: days,
+                        cover_url: coverUrl
                     })
                     .eq('id', id);
                 
@@ -447,143 +594,4 @@
                 setTimeout(() => {
                     status.textContent = '';
                     status.style.background = 'rgba(255,255,255,0.1)';
-                }, 3000);
-                
-                loadTracks();
-            } catch (e) {
-                status.textContent = '❌ Ошибка: ' + e.message;
-                console.error('Ошибка сохранения:', e);
-            }
-        };
-
-        window.copyLink = async (link, title) => {
-            try {
-                await navigator.clipboard.writeText(link);
-                
-                const status = document.getElementById('status');
-                status.textContent = `✅ Ссылка на "${title}" скопирована!`;
-                status.style.background = 'rgba(76, 175, 80, 0.2)';
-                
-                setTimeout(() => {
-                    status.textContent = '';
-                    status.style.background = 'rgba(255,255,255,0.1)';
-                }, 3000);
-            } catch (err) {
-                const textArea = document.createElement('textarea');
-                textArea.value = link;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                
-                alert('Ссылка скопирована!');
-            }
-        };
-
-        window.downloadQR = async (qrUrl, title) => {
-            try {
-                const response = await fetch(qrUrl);
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `QR-${title.replace(/[^a-z0-9а-яё]/gi, '_')}.png`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            } catch (error) {
-                console.error('Ошибка скачивания:', error);
-                window.open(qrUrl, '_blank');
-            }
-        };
-
-        window.toggleTrack = async (id, active) => {
-            const { error } = await supabase
-                .from('tracks')
-                .update({ active })
-                .eq('id', id);
-            
-            if (error) {
-                alert('Ошибка: ' + error.message);
-            } else {
-                loadTracks();
-            }
-        };
-
-        window.deleteTrack = async (id) => {
-            if (!confirm('Удалить этот трек?')) return;
-            
-            const { error } = await supabase
-                .from('tracks')
-                .delete()
-                .eq('id', id);
-            
-            if (error) {
-                alert('Ошибка удаления: ' + error.message);
-            } else {
-                loadTracks();
-            }
-        };
-
-        window.uploadTrack = async () => {
-            const status = document.getElementById('status');
-            const uploadBtn = document.getElementById('uploadBtn');
-            const title = document.getElementById('title').value.trim();
-            const description = document.getElementById('description').value.trim();
-            const price = parseInt(document.getElementById('price').value);
-            const days = parseInt(document.getElementById('days').value);
-            const file = document.getElementById('mp3file').files[0];
-
-            if (!file || !title) { 
-                alert('Заполните название и выберите файл'); 
-                return; 
-            }
-
-            status.textContent = '⏳ Загрузка файла...';
-            uploadBtn.disabled = true;
-
-            try {
-                const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
-                
-                const { error: uploadError, data } = await supabase.storage
-                    .from('tracks')
-                    .upload(fileName, file, {
-                        cacheControl: '3600',
-                        upsert: false
-                    });
-                
-                if (uploadError) throw uploadError;
-
-                const { data: { publicUrl } } = supabase.storage
-                    .from('tracks')
-                    .getPublicUrl(fileName);
-
-                const { error: dbError } = await supabase
-                    .from('tracks')
-                    .insert({
-                        title,
-                        description: description || null,
-                        price,
-                        duration_days: days,
-                        file_url: publicUrl,
-                        active: true,
-                        play_count: 0
-                    });
-
-                if (dbError) throw dbError;
-
-                status.textContent = '✅ Трек добавлен!';
-                document.getElementById('title').value = '';
-                document.getElementById('description').value = '';
-                document.getElementById('mp3file').value = '';
-                loadTracks();
-            } catch (e) {
-                status.textContent = '❌ Ошибка: ' + e.message;
-            } finally {
-                uploadBtn.disabled = false;
-            }
-        };
-    </script>
-</body>
-</html>
+                }, 
