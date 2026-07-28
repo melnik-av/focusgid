@@ -10,8 +10,9 @@ const keyForm = document.getElementById('keyForm');
 const keyInput = document.getElementById('keyInput');
 const activateBtn = document.getElementById('activateBtn');
 const errorState = document.getElementById('errorState');
-const waveformContainer = document.getElementById('waveformContainer');
-const waveform = document.getElementById('waveform');
+const progressContainer = document.getElementById('progressContainer');
+const progressBarWrapper = document.getElementById('progressBarWrapper');
+const progressBarFill = document.getElementById('progressBarFill');
 const currentTimeEl = document.getElementById('currentTime');
 const totalTimeEl = document.getElementById('totalTime');
 const playBtn = document.getElementById('playBtn');
@@ -21,8 +22,14 @@ let audio = null;
 let isPlaying = false;
 let currentTrackId = null;
 let playCounted = false;
-let waveBars = [];
-const WAVE_BARS_COUNT = 60;
+
+// Форматирование времени
+function formatTime(seconds) {
+    if (isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
 
 // Показать спиннер на кнопке
 function showLoadingSpinner() {
@@ -30,7 +37,6 @@ function showLoadingSpinner() {
     playBtn.disabled = true;
     buttonText.style.display = 'none';
     
-    // Удаляем старый спиннер если есть
     const oldSpinner = playBtn.querySelector('.spinner');
     if (oldSpinner) oldSpinner.remove();
     
@@ -48,47 +54,11 @@ function showButtonText(text) {
     buttonText.style.display = 'inline-block';
 }
 
-// Форматирование времени
-function formatTime(seconds) {
-    if (isNaN(seconds)) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-// Генерация вейвформы
-function generateWaveform() {
-    waveform.innerHTML = '';
-    waveBars = [];
-    
-    for (let i = 0; i < WAVE_BARS_COUNT; i++) {
-        const bar = document.createElement('div');
-        bar.className = 'wave-bar';
-        const height = 20 + Math.random() * 80;
-        bar.style.height = `${height}%`;
-        waveform.appendChild(bar);
-        waveBars.push(bar);
-    }
-}
-
-// Обновление вейвформы
-function updateWaveform(progress) {
-    const activeCount = Math.floor(progress * waveBars.length);
-    
-    waveBars.forEach((bar, index) => {
-        if (index < activeCount) {
-            bar.classList.add('active');
-        } else {
-            bar.classList.remove('active');
-        }
-    });
-}
-
 function showError(message) {
     loadingState.classList.add('hidden');
     keyForm.classList.add('hidden');
     playBtn.classList.add('hidden');
-    waveformContainer.classList.add('hidden');
+    progressContainer.classList.add('hidden');
     errorState.classList.remove('hidden');
     errorState.textContent = message;
 }
@@ -96,6 +66,7 @@ function showError(message) {
 function showKeyForm(message = null) {
     loadingState.classList.add('hidden');
     playBtn.classList.add('hidden');
+    progressContainer.classList.add('hidden');
     if (message) {
         errorState.classList.remove('hidden');
         errorState.textContent = message;
@@ -108,6 +79,28 @@ function hideAllStates() {
     keyForm.classList.add('hidden');
     errorState.classList.add('hidden');
 }
+
+// Обновление прогресс-бара
+function updateProgress() {
+    if (audio && audio.duration) {
+        const progress = audio.currentTime / audio.duration;
+        progressBarFill.style.width = (progress * 100) + '%';
+        currentTimeEl.textContent = formatTime(audio.currentTime);
+    }
+}
+
+// Перемотка по клику на прогресс-бар
+progressBarWrapper.addEventListener('click', (e) => {
+    if (!audio || !audio.duration) return;
+    
+    const rect = progressBarWrapper.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const width = rect.width;
+    const progress = clickX / width;
+    
+    audio.currentTime = progress * audio.duration;
+    updateProgress();
+});
 
 // Загрузка трека
 async function loadTrack(trackId = null) {
@@ -142,7 +135,6 @@ async function loadTrack(trackId = null) {
         
         console.log('✅ Трек загружен:', track.title);
         
-        // Показываем спиннер и начинаем загрузку аудио
         showLoadingSpinner();
         await loadAudio(track.file_url);
         
@@ -168,22 +160,13 @@ async function loadAudio(fileUrl) {
         audio.addEventListener('canplay', () => {
             console.log('✅ Аудио готово к воспроизведению');
             hideAllStates();
-            generateWaveform();
-            waveformContainer.classList.remove('hidden');
+            progressContainer.classList.remove('hidden');
             
-            // Убираем спиннер и показываем "Играть"
             showButtonText('Играть');
             playBtn.disabled = false;
         });
         
-        audio.addEventListener('timeupdate', () => {
-            currentTimeEl.textContent = formatTime(audio.currentTime);
-            
-            if (audio.duration) {
-                const progress = audio.currentTime / audio.duration;
-                updateWaveform(progress);
-            }
-        });
+        audio.addEventListener('timeupdate', updateProgress);
         
         audio.addEventListener('error', (e) => {
             console.error('❌ Ошибка аудио:', e);
@@ -200,7 +183,7 @@ async function loadAudio(fileUrl) {
         audio.addEventListener('ended', () => {
             isPlaying = false;
             showButtonText('Играть');
-            updateWaveform(1);
+            progressBarFill.style.width = '100%';
         });
         
         audio.load();
