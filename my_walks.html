@@ -276,13 +276,11 @@
                 
                 container.className = 'walks-list';
                 
-                // Просто рендерим список с duration из БД
                 container.innerHTML = walks.map(walk => {
                     const coverHtml = walk.cover_url 
                         ? `<img src="${walk.cover_url}" alt="${walk.title}">`
-                        : `<div class="walk-cover-placeholder">🎧</div>`;
+                        : `<div class="walk-cover-placeholder"></div>`;
                     
-                    // Показываем duration из БД
                     const durationText = formatDuration(walk.duration);
                     
                     return `
@@ -305,11 +303,13 @@
                     `;
                 }).join('');
                 
-                // Обработчики кликов
+                // Обработчики кликов - переход на ПЛЕЕР (index.html)
                 document.querySelectorAll('.walk-item').forEach(item => {
                     item.addEventListener('click', (e) => {
                         if (!e.target.closest('.walk-menu')) {
                             const walkId = item.dataset.id;
+                            console.log('🎵 Переход к плееру, трек:', walkId);
+                            // ВАЖНО: переходим на index.html (плеер), а не на my-walks.html
                             window.location.href = `index.html?track=${walkId}`;
                         }
                     });
@@ -354,6 +354,7 @@
         
         document.getElementById('actionPlay').addEventListener('click', () => {
             if (currentWalk) {
+                // ВАЖНО: переходим на index.html (плеер)
                 window.location.href = `index.html?track=${currentWalk.id}`;
             }
         });
