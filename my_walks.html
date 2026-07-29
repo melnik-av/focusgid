@@ -46,13 +46,8 @@
             transition: opacity 0.2s;
         }
         
-        .walk-item:hover {
-            opacity: 0.7;
-        }
-        
-        .walk-item:active {
-            opacity: 0.5;
-        }
+        .walk-item:hover { opacity: 0.7; }
+        .walk-item:active { opacity: 0.5; }
         
         .walk-cover {
             width: 80px;
@@ -114,9 +109,7 @@
             flex-shrink: 0;
         }
         
-        .walk-menu:hover {
-            background: #f5f5f5;
-        }
+        .walk-menu:hover { background: #f5f5f5; }
         
         .walk-menu-dots {
             display: flex;
@@ -143,17 +136,9 @@
             color: #999999;
         }
         
-        .empty-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
+        .empty-icon { font-size: 48px; margin-bottom: 16px; }
+        .empty-text { font-size: 16px; line-height: 1.5; }
         
-        .empty-text {
-            font-size: 16px;
-            line-height: 1.5;
-        }
-        
-        /* Модальное меню */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -167,9 +152,7 @@
             align-items: flex-end;
         }
         
-        .modal-overlay.active {
-            display: flex;
-        }
+        .modal-overlay.active { display: flex; }
         
         .modal-content {
             background: white;
@@ -209,13 +192,8 @@
             transition: background 0.2s;
         }
         
-        .modal-action:hover {
-            background: #e8e8e8;
-        }
-        
-        .modal-action.danger {
-            color: #e94560;
-        }
+        .modal-action:hover { background: #e8e8e8; }
+        .modal-action.danger { color: #e94560; }
         
         .modal-close {
             margin-top: 16px;
@@ -230,18 +208,9 @@
         }
         
         @media (max-width: 480px) {
-            h1 {
-                font-size: 28px;
-            }
-            
-            .walk-cover {
-                width: 70px;
-                height: 70px;
-            }
-            
-            .walk-title {
-                font-size: 16px;
-            }
+            h1 { font-size: 28px; }
+            .walk-cover { width: 70px; height: 70px; }
+            .walk-title { font-size: 16px; }
         }
     </style>
 </head>
@@ -254,14 +223,13 @@
         </div>
     </div>
     
-    <!-- Модальное меню -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-content">
             <div class="modal-title" id="modalTitle">Действия</div>
             <div class="modal-actions">
                 <div class="modal-action" id="actionPlay">▶️ Слушать</div>
-                <div class="modal-action" id="actionShare"> Поделиться</div>
-                <div class="modal-action danger" id="actionDelete">️ Удалить</div>
+                <div class="modal-action" id="actionShare">📤 Поделиться</div>
+                <div class="modal-action danger" id="actionDelete">🗑️ Удалить</div>
             </div>
             <div class="modal-close" id="modalClose">Отмена</div>
         </div>
@@ -271,6 +239,46 @@
         import { supabase } from './supabase-config.js';
         
         let currentWalk = null;
+        
+        // Форматирование времени
+        function formatDuration(seconds) {
+            if (!seconds || isNaN(seconds)) return '—';
+            const hours = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            if (hours > 0) {
+                return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            } else {
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+        }
+        
+        // Определение длительности через Audio API
+        function getAudioDuration(url) {
+            return new Promise((resolve, reject) => {
+                const audio = new Audio();
+                audio.preload = 'metadata';
+                
+                const timeout = setTimeout(() => {
+                    audio.src = '';
+                    reject(new Error('Таймаут'));
+                }, 8000);
+                
+                audio.addEventListener('loadedmetadata', () => {
+                    clearTimeout(timeout);
+                    audio.src = '';
+                    resolve(audio.duration);
+                });
+                
+                audio.addEventListener('error', () => {
+                    clearTimeout(timeout);
+                    audio.src = '';
+                    reject(new Error('Ошибка'));
+                });
+                
+                audio.src = url + '?t=' + Date.now();
+            });
+        }
         
         // Загрузка списка прогулок
         async function loadWalks() {
@@ -296,11 +304,17 @@
                 }
                 
                 container.className = 'walks-list';
+                
+                // Сначала рендерим список
                 container.innerHTML = walks.map(walk => {
-                    const duration = walk.duration || '20:32';
                     const coverHtml = walk.cover_url 
                         ? `<img src="${walk.cover_url}" alt="${walk.title}">`
                         : `<div class="walk-cover-placeholder">🎧</div>`;
+                    
+                    // Показываем длительность из БД или "Загрузка..."
+                    const durationText = walk.duration 
+                        ? formatDuration(walk.duration) 
+                        : '⏳';
                     
                     return `
                         <div class="walk-item" data-id="${walk.id}">
@@ -309,7 +323,7 @@
                             </div>
                             <div class="walk-info">
                                 <div class="walk-title">${walk.title}</div>
-                                <div class="walk-duration">${duration}</div>
+                                <div class="walk-duration" id="duration-${walk.id}">${durationText}</div>
                             </div>
                             <div class="walk-menu" data-id="${walk.id}">
                                 <div class="walk-menu-dots">
@@ -321,6 +335,42 @@
                         </div>
                     `;
                 }).join('');
+                
+                // Для треков без duration - определяем на лету
+                const walksWithoutDuration = walks.filter(w => !w.duration);
+                
+                if (walksWithoutDuration.length > 0) {
+                    console.log(`🎵 Определяем длительность для ${walksWithoutDuration.length} треков...`);
+                    
+                    // Определяем последовательно чтобы не перегружать
+                    for (const walk of walksWithoutDuration) {
+                        try {
+                            const duration = await getAudioDuration(walk.file_url);
+                            const roundedDuration = Math.round(duration);
+                            
+                            console.log(`✅ ${walk.title}: ${formatDuration(roundedDuration)}`);
+                            
+                            // Обновляем отображение
+                            const durationEl = document.getElementById(`duration-${walk.id}`);
+                            if (durationEl) {
+                                durationEl.textContent = formatDuration(roundedDuration);
+                            }
+                            
+                            // Сохраняем в БД
+                            await supabase
+                                .from('tracks')
+                                .update({ duration: roundedDuration })
+                                .eq('id', walk.id);
+                            
+                        } catch (e) {
+                            console.error(` ${walk.title}:`, e);
+                            const durationEl = document.getElementById(`duration-${walk.id}`);
+                            if (durationEl) {
+                                durationEl.textContent = '—';
+                            }
+                        }
+                    }
+                }
                 
                 // Обработчики кликов
                 document.querySelectorAll('.walk-item').forEach(item => {
@@ -352,26 +402,21 @@
             }
         }
         
-        // Открыть модальное меню
         function openModal(walk) {
             currentWalk = walk;
             document.getElementById('modalTitle').textContent = walk.title;
             document.getElementById('modalOverlay').classList.add('active');
         }
         
-        // Закрыть модальное меню
         function closeModal() {
             document.getElementById('modalOverlay').classList.remove('active');
             currentWalk = null;
         }
         
-        // Обработчики модального меню
         document.getElementById('modalClose').addEventListener('click', closeModal);
         
         document.getElementById('modalOverlay').addEventListener('click', (e) => {
-            if (e.target.id === 'modalOverlay') {
-                closeModal();
-            }
+            if (e.target.id === 'modalOverlay') closeModal();
         });
         
         document.getElementById('actionPlay').addEventListener('click', () => {
@@ -383,13 +428,9 @@
         document.getElementById('actionShare').addEventListener('click', async () => {
             if (currentWalk) {
                 const shareUrl = `${window.location.origin}/index.html?track=${currentWalk.id}`;
-                
                 try {
                     if (navigator.share) {
-                        await navigator.share({
-                            title: currentWalk.title,
-                            url: shareUrl
-                        });
+                        await navigator.share({ title: currentWalk.title, url: shareUrl });
                     } else {
                         await navigator.clipboard.writeText(shareUrl);
                         alert('Ссылка скопирована!');
@@ -402,12 +443,10 @@
         
         document.getElementById('actionDelete').addEventListener('click', () => {
             if (currentWalk && confirm(`Удалить "${currentWalk.title}"?`)) {
-                // Здесь можно добавить логику удаления
                 alert('Функция удаления будет добавлена позже');
             }
         });
         
-        // Загрузка при старте
         loadWalks();
     </script>
 </body>
