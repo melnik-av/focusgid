@@ -299,7 +299,7 @@
                 reader.onload = (e) => {
                     selectedCoverUrl = e.target.result;
                     document.getElementById('coverPreview').innerHTML = 
-                        `<img src="${selectedCoverUrl}" alt="Обложка">`;
+                        '<img src="' + selectedCoverUrl + '" alt="Обложка">';
                 };
                 reader.readAsDataURL(file);
             }
@@ -314,7 +314,7 @@
         };
 
         function getQRUrl(text, size = 200) {
-            return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}&margin=10&color=000000&bgcolor=ffffff`;
+            return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&data=' + encodeURIComponent(text) + '&margin=10&color=000000&bgcolor=ffffff';
         }
 
         function formatDate(dateStr) {
@@ -335,9 +335,9 @@
             const mins = Math.floor((seconds % 3600) / 60);
             const secs = Math.floor(seconds % 60);
             if (hours > 0) {
-                return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                return hours + ':' + mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
             } else {
-                return `${mins}:${secs.toString().padStart(2, '0')}`;
+                return mins + ':' + secs.toString().padStart(2, '0');
             }
         }
 
@@ -363,68 +363,66 @@
             const playerUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
             
             list.innerHTML = tracks.map(t => {
-                const trackLink = `${playerUrl}?track=${t.id}`;
+                const trackLink = playerUrl + '?track=' + t.id;
                 const descriptionHtml = t.description 
-                    ? `<div class="track-description">"${t.description}"</div>` 
+                    ? '<div class="track-description">"' + t.description + '"</div>' 
                     : '';
                 const qrUrl = getQRUrl(trackLink, 200);
                 const playCount = t.play_count || 0;
                 const lastPlayed = formatDate(t.last_played_at);
                 const duration = formatDuration(t.duration);
                 const coverHtml = t.cover_url 
-                    ? `<div class="track-cover-thumb"><img src="${t.cover_url}" alt="${t.title}"></div>`
+                    ? '<div class="track-cover-thumb"><img src="' + t.cover_url + '" alt="' + t.title + '"></div>'
                     : '';
                 
-                return `
-                    <div class="track-item" id="track-${t.id}">
-                        ${coverHtml}
-                        <div class="track-title">${t.title}</div>
-                        ${descriptionHtml}
-                        <div class="track-meta">${t.price} руб, ${t.duration_days} дней, ${duration}</div>
-                        
-                        <div class="stats-row">
-                            <div class="stat-card">
-                                <div class="stat-icon">▶️</div>
-                                <div class="stat-value">${playCount}</div>
-                                <div class="stat-label">Прослушиваний</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon"></div>
-                                <div class="stat-value" style="font-size: 14px;">${lastPlayed}</div>
-                                <div class="stat-label">Последнее прослушивание</div>
-                            </div>
-                        </div>
-                        
-                        <div class="track-link">${trackLink}</div>
-                        
-                        <div class="qr-section">
-                            <div class="qr-label"> QR-код для быстрого доступа</div>
-                            <div class="qr-wrapper">
-                                <div class="qr-code-container">
-                                    <img src="${qrUrl}" alt="QR-код" crossorigin="anonymous">
-                                </div>
-                                <div class="qr-actions">
-                                    <button class="btn-qr-download" onclick="downloadQR('${qrUrl}', '${t.title.replace(/'/g, "\\'")}')">
-                                         Скачать QR
-                                    </button>
-                                    <button class="btn-copy" onclick="copyLink('${trackLink}', '${t.title.replace(/'/g, "\\'")}')">
-                                         Копировать ссылку
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="track-actions">
-                            <button class="btn-edit" onclick="showEditForm('${t.id}', '${t.title.replace(/'/g, "\\'")}', '${(t.description || '').replace(/'/g, "\\'")}', ${t.price}, ${t.duration_days}, '${t.cover_url || ''}')">
-                                ✏️ Редактировать
-                            </button>
-                            <button onclick="toggleTrack('${t.id}', ${!t.active})">
-                                ${t.active ? 'Отключить' : 'Включить'}
-                            </button>
-                            <button class="btn-delete" onclick="deleteTrack('${t.id}')">Удалить</button>
-                        </div>
-                    </div>
-                `;
+                return '<div class="track-item" id="track-' + t.id + '">' +
+                    coverHtml +
+                    '<div class="track-title">' + t.title + '</div>' +
+                    descriptionHtml +
+                    '<div class="track-meta">' + t.price + ' руб, ' + t.duration_days + ' дней, ' + duration + '</div>' +
+                    
+                    '<div class="stats-row">' +
+                        '<div class="stat-card">' +
+                            '<div class="stat-icon">▶️</div>' +
+                            '<div class="stat-value">' + playCount + '</div>' +
+                            '<div class="stat-label">Прослушиваний</div>' +
+                        '</div>' +
+                        '<div class="stat-card">' +
+                            '<div class="stat-icon">🕐</div>' +
+                            '<div class="stat-value" style="font-size: 14px;">' + lastPlayed + '</div>' +
+                            '<div class="stat-label">Последнее прослушивание</div>' +
+                        '</div>' +
+                    '</div>' +
+                    
+                    '<div class="track-link">' + trackLink + '</div>' +
+                    
+                    '<div class="qr-section">' +
+                        '<div class="qr-label"> QR-код для быстрого доступа</div>' +
+                        '<div class="qr-wrapper">' +
+                            '<div class="qr-code-container">' +
+                                '<img src="' + qrUrl + '" alt="QR-код" crossorigin="anonymous">' +
+                            '</div>' +
+                            '<div class="qr-actions">' +
+                                '<button class="btn-qr-download" onclick="downloadQR(\'' + qrUrl + '\', \'' + t.title.replace(/'/g, "\\'") + '\')">' +
+                                    ' Скачать QR' +
+                                '</button>' +
+                                '<button class="btn-copy" onclick="copyLink(\'' + trackLink + '\', \'' + t.title.replace(/'/g, "\\'") + '\')">' +
+                                    ' Копировать ссылку' +
+                                '</button>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    
+                    '<div class="track-actions">' +
+                        '<button class="btn-edit" onclick="showEditForm(\'' + t.id + '\', \'' + t.title.replace(/'/g, "\\'") + '\', \'' + (t.description || '').replace(/'/g, "\\'") + '\', ' + t.price + ', ' + t.duration_days + ', \'' + (t.cover_url || '') + '\')">' +
+                            '✏️ Редактировать' +
+                        '</button>' +
+                        '<button onclick="toggleTrack(\'' + t.id + '\', ' + !t.active + ')">' +
+                            (t.active ? 'Отключить' : 'Включить') +
+                        '</button>' +
+                        '<button class="btn-delete" onclick="deleteTrack(\'' + t.id + '\')">Удалить</button>' +
+                    '</div>' +
+                '</div>';
             }).join('');
         }
 
@@ -442,7 +440,7 @@
         }
 
         window.showEditForm = (id, title, description, price, days, coverUrl) => {
-            const trackItem = document.getElementById(`track-${id}`);
+            const trackItem = document.getElementById('track-' + id);
             const existingForm = trackItem.querySelector('.edit-form');
             
             if (existingForm) {
@@ -451,54 +449,53 @@
             }
             
             const coverPreviewHtml = coverUrl 
-                ? `<img src="${coverUrl}" alt="Обложка" style="width: 100%; height: 100%; object-fit: cover;">`
+                ? '<img src="' + coverUrl + '" alt="Обложка" style="width: 100%; height: 100%; object-fit: cover;">'
                 : '<div class="cover-preview-placeholder"><br>Нет обложки</div>';
             
             const form = document.createElement('div');
             form.className = 'edit-form';
-            form.innerHTML = `
-                <label class="field-label">Название трека</label>
-                <input type="text" id="edit-title-${id}" value="${title}">
+            form.innerHTML = 
+                '<label class="field-label">Название трека</label>' +
+                '<input type="text" id="edit-title-' + id + '" value="' + title + '">' +
                 
-                <label class="field-label">Описание</label>
-                <textarea id="edit-description-${id}">${description}</textarea>
+                '<label class="field-label">Описание</label>' +
+                '<textarea id="edit-description-' + id + '">' + description + '</textarea>' +
                 
-                <label class="field-label">Обложка</label>
-                <div class="cover-preview" id="edit-cover-preview-${id}">
-                    ${coverPreviewHtml}
-                </div>
-                <input type="file" id="edit-cover-file-${id}" accept="image/*" style="display: none;">
-                <div class="cover-actions">
-                    <button onclick="document.getElementById('edit-cover-file-${id}').click()" style="background: #2196F3;">
-                        📷 Изменить обложку
-                    </button>
-                    <button class="btn-remove-cover" onclick="removeEditCover('${id}')">
-                        🗑️ Удалить
-                    </button>
-                </div>
+                '<label class="field-label">Обложка</label>' +
+                '<div class="cover-preview" id="edit-cover-preview-' + id + '">' +
+                    coverPreviewHtml +
+                '</div>' +
+                '<input type="file" id="edit-cover-file-' + id + '" accept="image/*" style="display: none;">' +
+                '<div class="cover-actions">' +
+                    '<button onclick="document.getElementById(\'edit-cover-file-' + id + '\').click()" style="background: #2196F3;">' +
+                        '📷 Изменить обложку' +
+                    '</button>' +
+                    '<button class="btn-remove-cover" onclick="removeEditCover(\'' + id + '\')">' +
+                        '🗑️ Удалить' +
+                    '</button>' +
+                '</div>' +
                 
-                <label class="field-label">Цена (руб)</label>
-                <input type="number" id="edit-price-${id}" value="${price}">
+                '<label class="field-label">Цена (руб)</label>' +
+                '<input type="number" id="edit-price-' + id + '" value="' + price + '">' +
                 
-                <label class="field-label">Дней доступа</label>
-                <input type="number" id="edit-days-${id}" value="${days}">
+                '<label class="field-label">Дней доступа</label>' +
+                '<input type="number" id="edit-days-' + id + '" value="' + days + '">' +
                 
-                <div class="edit-actions">
-                    <button class="btn-save" onclick="saveTrack('${id}', '${coverUrl}')"> Сохранить</button>
-                    <button class="btn-cancel" onclick="loadTracks()">Отмена</button>
-                </div>
-            `;
+                '<div class="edit-actions">' +
+                    '<button class="btn-save" onclick="saveTrack(\'' + id + '\', \'' + coverUrl + '\')">💾 Сохранить</button>' +
+                    '<button class="btn-cancel" onclick="loadTracks()">Отмена</button>' +
+                '</div>';
             
             trackItem.appendChild(form);
             
-            document.getElementById(`edit-cover-file-${id}`).addEventListener('change', (e) => {
+            document.getElementById('edit-cover-file-' + id).addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        document.getElementById(`edit-cover-preview-${id}`).innerHTML = 
-                            `<img src="${e.target.result}" alt="Обложка">`;
-                        document.getElementById(`edit-cover-file-${id}`).dataset.newCover = e.target.result;
+                        document.getElementById('edit-cover-preview-' + id).innerHTML = 
+                            '<img src="' + e.target.result + '" alt="Обложка">';
+                        document.getElementById('edit-cover-file-' + id).dataset.newCover = e.target.result;
                     };
                     reader.readAsDataURL(file);
                 }
@@ -506,17 +503,17 @@
         };
 
         window.removeEditCover = (id) => {
-            document.getElementById(`edit-cover-preview-${id}`).innerHTML = 
+            document.getElementById('edit-cover-preview-' + id).innerHTML = 
                 '<div class="cover-preview-placeholder">📷<br>Нет обложки</div>';
-            document.getElementById(`edit-cover-file-${id}`).value = '';
-            delete document.getElementById(`edit-cover-file-${id}`).dataset.newCover;
+            document.getElementById('edit-cover-file-' + id).value = '';
+            delete document.getElementById('edit-cover-file-' + id).dataset.newCover;
         };
 
         window.saveTrack = async (id, oldCoverUrl) => {
-            const title = document.getElementById(`edit-title-${id}`).value.trim();
-            const description = document.getElementById(`edit-description-${id}`).value.trim();
-            const price = parseInt(document.getElementById(`edit-price-${id}`).value);
-            const days = parseInt(document.getElementById(`edit-days-${id}`).value);
+            const title = document.getElementById('edit-title-' + id).value.trim();
+            const description = document.getElementById('edit-description-' + id).value.trim();
+            const price = parseInt(document.getElementById('edit-price-' + id).value);
+            const days = parseInt(document.getElementById('edit-days-' + id).value);
             
             if (!title) {
                 alert('Название обязательно');
@@ -524,12 +521,12 @@
             }
             
             const status = document.getElementById('status');
-            status.textContent = '⏳ Сохранение...';
+            status.textContent = ' Сохранение...';
             
             try {
                 let coverUrl = oldCoverUrl;
                 
-                const coverFileInput = document.getElementById(`edit-cover-file-${id}`);
+                const coverFileInput = document.getElementById('edit-cover-file-' + id);
                 const newCoverData = coverFileInput.dataset.newCover;
                 
                 if (newCoverData) {
@@ -538,7 +535,7 @@
                     const response = await fetch(newCoverData);
                     const blob = await response.blob();
                     
-                    const fileName = `cover_${Date.now()}_${id}.jpg`;
+                    const fileName = 'cover_' + Date.now() + '_' + id + '.jpg';
                     const { error: uploadError, data } = await supabase.storage
                         .from('covers')
                         .upload(fileName, blob, {
@@ -588,7 +585,7 @@
                 await navigator.clipboard.writeText(link);
                 
                 const status = document.getElementById('status');
-                status.textContent = `✅ Ссылка на "${title}" скопирована!`;
+                status.textContent = '✅ Ссылка на "' + title + '" скопирована!';
                 status.style.background = 'rgba(76, 175, 80, 0.2)';
                 
                 setTimeout(() => {
@@ -614,7 +611,7 @@
                 const url = window.URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `QR-${title.replace(/[^a-z0-9а-яё]/gi, '_')}.png`;
+                link.download = 'QR-' + title.replace(/[^a-z0-9а-яё]/gi, '_') + '.png';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -653,34 +650,6 @@
             }
         };
 
-        // Функция для получения длительности аудио
-        function getAudioDuration(url) {
-            return new Promise((resolve, reject) => {
-                const audio = new Audio();
-                audio.preload = 'metadata';
-                
-                const timeout = setTimeout(() => {
-                    audio.src = '';
-                    reject(new Error('Таймаут определения длительности'));
-                }, 10000);
-                
-                audio.addEventListener('loadedmetadata', () => {
-                    clearTimeout(timeout);
-                    audio.src = '';
-                    resolve(audio.duration);
-                });
-                
-                audio.addEventListener('error', (e) => {
-                    clearTimeout(timeout);
-                    audio.src = '';
-                    console.error('Ошибка загрузки метаданных:', e);
-                    reject(new Error('Не удалось определить длительность'));
-                });
-                
-                audio.src = url + '?t=' + Date.now();
-            });
-        }
-
         window.uploadTrack = async () => {
             const status = document.getElementById('status');
             const uploadBtn = document.getElementById('uploadBtn');
@@ -707,7 +676,7 @@
             uploadBtn.disabled = true;
 
             try {
-                const audioFileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
+                const audioFileName = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
                 
                 console.log(' Загрузка аудио:', audioFileName);
                 
@@ -730,7 +699,7 @@
                 console.log('✅ Аудио загружено:', audioUrl);
 
                 status.textContent = '⏱️ Определение длительности...';
-                console.log('🎵 Определение длительности...');
+                console.log(' Определение длительности...');
                 
                 const duration = await getAudioDuration(audioUrl);
                 console.log('✅ Длительность:', duration, 'сек');
@@ -739,7 +708,7 @@
                 if (selectedCoverFile) {
                     status.textContent = '📤 Загрузка обложки...';
                     
-                    const coverFileName = `cover_${Date.now()}.jpg`;
+                    const coverFileName = 'cover_' + Date.now() + '.jpg';
                     const { error: coverUploadError } = await supabase.storage
                         .from('covers')
                         .upload(coverFileName, selectedCoverFile, {
@@ -818,6 +787,33 @@
                 uploadBtn.disabled = false;
             }
         };
+
+        function getAudioDuration(url) {
+            return new Promise((resolve, reject) => {
+                const audio = new Audio();
+                audio.preload = 'metadata';
+                
+                const timeout = setTimeout(() => {
+                    audio.src = '';
+                    reject(new Error('Таймаут определения длительности'));
+                }, 10000);
+                
+                audio.addEventListener('loadedmetadata', () => {
+                    clearTimeout(timeout);
+                    audio.src = '';
+                    resolve(audio.duration);
+                });
+                
+                audio.addEventListener('error', (e) => {
+                    clearTimeout(timeout);
+                    audio.src = '';
+                    console.error('Ошибка загрузки метаданных:', e);
+                    reject(new Error('Не удалось определить длительность'));
+                });
+                
+                audio.src = url + '?t=' + Date.now();
+            });
+        }
     </script>
 </body>
 </html>
