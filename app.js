@@ -23,7 +23,6 @@ let isPlaying = false;
 let currentTrackId = null;
 let playCounted = false;
 
-// Форматирование времени
 function formatTime(seconds) {
     if (isNaN(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
@@ -31,7 +30,6 @@ function formatTime(seconds) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-// Показать спиннер на кнопке
 function showLoadingSpinner() {
     playBtn.classList.remove('hidden');
     playBtn.disabled = true;
@@ -45,7 +43,6 @@ function showLoadingSpinner() {
     playBtn.appendChild(spinner);
 }
 
-// Показать текст на кнопке
 function showButtonText(text) {
     const spinner = playBtn.querySelector('.spinner');
     if (spinner) spinner.remove();
@@ -80,7 +77,6 @@ function hideAllStates() {
     errorState.classList.add('hidden');
 }
 
-// Обновление прогресс-бара
 function updateProgress() {
     if (audio && audio.duration) {
         const progress = audio.currentTime / audio.duration;
@@ -89,7 +85,6 @@ function updateProgress() {
     }
 }
 
-// Загрузка трека
 async function loadTrack(trackId = null) {
     try {
         let query = supabase.from('tracks').select('*').eq('active', true);
@@ -131,7 +126,6 @@ async function loadTrack(trackId = null) {
     }
 }
 
-// Загрузка аудио
 async function loadAudio(fileUrl) {
     try {
         const url = fileUrl + '?t=' + Date.now();
@@ -157,7 +151,6 @@ async function loadAudio(fileUrl) {
         
         audio.addEventListener('error', (e) => {
             console.error('❌ Ошибка аудио:', e);
-            console.error('Код:', audio.error?.code);
             
             let msg = 'Ошибка загрузки аудио';
             if (audio.error?.code === 1) msg = 'Ошибка сети';
@@ -181,7 +174,6 @@ async function loadAudio(fileUrl) {
     }
 }
 
-// Активация по ключу
 async function activateByKey(key) {
     try {
         const { data: purchase, error } = await supabase
@@ -212,7 +204,6 @@ async function activateByKey(key) {
     }
 }
 
-// Увеличение счетчика
 async function incrementPlayCount() {
     if (!currentTrackId || playCounted) return;
     
@@ -232,7 +223,6 @@ async function incrementPlayCount() {
     }
 }
 
-// Обработчик кнопки Play/Pause
 playBtn.addEventListener('click', async () => {
     if (!audio || playBtn.disabled) return;
     
@@ -252,7 +242,6 @@ playBtn.addEventListener('click', async () => {
     }
 });
 
-// Обработчик активации ключа
 activateBtn.addEventListener('click', () => {
     const key = keyInput.value.trim();
     if (key) {
@@ -266,7 +255,6 @@ keyInput.addEventListener('keypress', (e) => {
     }
 });
 
-// Инициализация
 async function init() {
     const params = new URLSearchParams(window.location.search);
     const trackId = params.get('track');
