@@ -35,7 +35,6 @@
             align-items: center;
         }
         
-        /* Контейнер обложки с волной на фоне */
         .cover-wrapper {
             position: relative;
             width: 100%;
@@ -46,7 +45,6 @@
             margin-bottom: 24px;
         }
         
-        /* SVG волна на фоне */
         .waveform-bg {
             position: absolute;
             top: 50%;
@@ -61,10 +59,8 @@
         
         .waveform-bg rect {
             fill: #c8c8c8;
-            rx: 2;
         }
         
-        /* Обложка поверх волны */
         .cover-container {
             position: relative;
             width: 220px;
@@ -111,7 +107,6 @@
             padding: 0 10px;
         }
         
-        /* Прогресс-бар с временем */
         .progress-container {
             width: 100%;
             padding: 0 10px;
@@ -129,13 +124,8 @@
             font-weight: 500;
         }
         
-        .time-label.current {
-            text-align: right;
-        }
-        
-        .time-label.total {
-            text-align: left;
-        }
+        .time-label.current { text-align: right; }
+        .time-label.total { text-align: left; }
         
         .progress-bar-wrapper {
             flex: 1;
@@ -154,7 +144,6 @@
             transition: width 0.1s linear;
         }
         
-        /* Кнопка Play/Pause/Loading */
         .play-button {
             width: 100%;
             max-width: 320px;
@@ -173,24 +162,12 @@
             align-items: center;
             justify-content: center;
             min-height: 64px;
-            position: relative;
         }
         
-        .play-button:hover:not(:disabled) {
-            background: #333333;
-            transform: scale(1.02);
-        }
+        .play-button:hover:not(:disabled) { background: #333333; transform: scale(1.02); }
+        .play-button:active:not(:disabled) { transform: scale(0.98); }
+        .play-button:disabled { background: #cccccc; cursor: not-allowed; }
         
-        .play-button:active:not(:disabled) {
-            transform: scale(0.98);
-        }
-        
-        .play-button:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-        }
-        
-        /* Спиннер загрузки */
         .spinner {
             width: 24px;
             height: 24px;
@@ -200,19 +177,11 @@
             animation: spin 0.8s linear infinite;
         }
         
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
         
-        .button-text {
-            display: inline-block;
-        }
+        .button-text { display: inline-block; }
         
-        .loading-state {
-            text-align: center;
-            color: #666666;
-            padding: 20px;
-        }
+        .loading-state { text-align: center; color: #666666; padding: 20px; }
         
         .error-state {
             text-align: center;
@@ -232,12 +201,7 @@
             margin: 20px 0;
         }
         
-        .key-form p {
-            font-size: 15px;
-            color: #666;
-            margin-bottom: 15px;
-            text-align: center;
-        }
+        .key-form p { font-size: 15px; color: #666; margin-bottom: 15px; text-align: center; }
         
         .key-form input {
             width: 100%;
@@ -252,10 +216,7 @@
             font-family: monospace;
         }
         
-        .key-form input:focus {
-            outline: none;
-            border-color: #1a1a1a;
-        }
+        .key-form input:focus { outline: none; border-color: #1a1a1a; }
         
         .key-form button {
             width: 100%;
@@ -272,83 +233,90 @@
         .hidden { display: none !important; }
         
         @media (max-width: 480px) {
-            .cover-wrapper {
-                height: 240px;
-            }
-            
-            .cover-container {
-                width: 180px;
-                height: 180px;
-            }
-            
-            .waveform-bg {
-                width: 100%;
-                max-width: 320px;
-            }
-            
-            .track-title {
-                font-size: 22px;
-            }
-            
-            .track-description {
-                font-size: 14px;
-            }
-            
-            .time-label {
-                font-size: 13px;
-                min-width: 40px;
-            }
+            .cover-wrapper { height: 240px; }
+            .cover-container { width: 180px; height: 180px; }
+            .waveform-bg { width: 100%; max-width: 320px; }
+            .track-title { font-size: 22px; }
+            .track-description { font-size: 14px; }
+            .time-label { font-size: 13px; min-width: 40px; }
         }
     </style>
 </head>
 <body>
     <div class="player">
-        <!-- Обложка с SVG-волной на фоне -->
         <div class="cover-wrapper">
-            <svg class="waveform-bg" viewBox="0 0 560 120" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-                <rect x="5" y="50" width="6" height="20" rx="3"/>
-                <rect x="18" y="30" width="6" height="60" rx="3"/>
-                <rect x="31" y="45" width="6" height="30" rx="3"/>
-                <rect x="44" y="20" width="6" height="80" rx="3"/>
-                <rect x="57" y="40" width="6" height="40" rx="3"/>
-                <rect x="70" y="15" width="6" height="90" rx="3"/>
-                <rect x="83" y="35" width="6" height="50" rx="3"/>
-                <rect x="96" y="10" width="6" height="100" rx="3"/>
-                <rect x="109" y="45" width="6" height="30" rx="3"/>
-                <rect x="122" y="25" width="6" height="70" rx="3"/>
-                <rect x="135" y="50" width="6" height="20" rx="3"/>
-                <rect x="148" y="15" width="6" height="90" rx="3"/>
-                <rect x="161" y="35" width="6" height="50" rx="3"/>
-                <rect x="174" y="5" width="6" height="110" rx="3"/>
-                <rect x="187" y="40" width="6" height="40" rx="3"/>
-                <rect x="200" y="20" width="6" height="80" rx="3"/>
-                <rect x="213" y="45" width="6" height="30" rx="3"/>
-                <rect x="226" y="10" width="6" height="100" rx="3"/>
-                <rect x="239" y="30" width="6" height="60" rx="3"/>
-                <rect x="252" y="50" width="6" height="20" rx="3"/>
-                <rect x="265" y="15" width="6" height="90" rx="3"/>
-                <rect x="278" y="40" width="6" height="40" rx="3"/>
-                <rect x="291" y="5" width="6" height="110" rx="3"/>
-                <rect x="304" y="25" width="6" height="70" rx="3"/>
-                <rect x="317" y="45" width="6" height="30" rx="3"/>
-                <rect x="330" y="10" width="6" height="100" rx="3"/>
-                <rect x="343" y="35" width="6" height="50" rx="3"/>
-                <rect x="356" y="20" width="6" height="80" rx="3"/>
-                <rect x="369" y="50" width="6" height="20" rx="3"/>
-                <rect x="382" y="15" width="6" height="90" rx="3"/>
-                <rect x="395" y="40" width="6" height="40" rx="3"/>
-                <rect x="408" y="5" width="6" height="110" rx="3"/>
-                <rect x="421" y="30" width="6" height="60" rx="3"/>
-                <rect x="434" y="45" width="6" height="30" rx="3"/>
-                <rect x="447" y="10" width="6" height="100" rx="3"/>
-                <rect x="460" y="25" width="6" height="70" rx="3"/>
-                <rect x="473" y="50" width="6" height="20" rx="3"/>
-                <rect x="486" y="15" width="6" height="90" rx="3"/>
-                <rect x="499" y="35" width="6" height="50" rx="3"/>
-                <rect x="512" y="20" width="6" height="80" rx="3"/>
-                <rect x="525" y="45" width="6" height="30" rx="3"/>
-                <rect x="538" y="10" width="6" height="100" rx="3"/>
-                <rect x="551" y="40" width="6" height="40" rx="3"/>
+            <svg class="waveform-bg" viewBox="0 0 600 120" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+                <!-- Симметричная волна с затуханием к краям -->
+                <!-- Левая часть (затухание от края к центру) -->
+                <rect x="2" y="56" width="5" height="8" rx="2.5"/>
+                <rect x="11" y="54" width="5" height="12" rx="2.5"/>
+                <rect x="20" y="52" width="5" height="16" rx="2.5"/>
+                <rect x="29" y="49" width="5" height="22" rx="2.5"/>
+                <rect x="38" y="46" width="5" height="28" rx="2.5"/>
+                <rect x="47" y="42" width="5" height="36" rx="2.5"/>
+                <rect x="56" y="38" width="5" height="44" rx="2.5"/>
+                <rect x="65" y="33" width="5" height="54" rx="2.5"/>
+                <rect x="74" y="28" width="5" height="64" rx="2.5"/>
+                <rect x="83" y="23" width="5" height="74" rx="2.5"/>
+                <rect x="92" y="19" width="5" height="82" rx="2.5"/>
+                <rect x="101" y="16" width="5" height="88" rx="2.5"/>
+                <rect x="110" y="14" width="5" height="92" rx="2.5"/>
+                <rect x="119" y="12" width="5" height="96" rx="2.5"/>
+                <rect x="128" y="11" width="5" height="98" rx="2.5"/>
+                <rect x="137" y="10" width="5" height="100" rx="2.5"/>
+                <rect x="146" y="10" width="5" height="100" rx="2.5"/>
+                <rect x="155" y="11" width="5" height="98" rx="2.5"/>
+                <rect x="164" y="12" width="5" height="96" rx="2.5"/>
+                <rect x="173" y="14" width="5" height="92" rx="2.5"/>
+                <rect x="182" y="16" width="5" height="88" rx="2.5"/>
+                <rect x="191" y="19" width="5" height="82" rx="2.5"/>
+                <rect x="200" y="23" width="5" height="74" rx="2.5"/>
+                <rect x="209" y="28" width="5" height="64" rx="2.5"/>
+                <rect x="218" y="33" width="5" height="54" rx="2.5"/>
+                <rect x="227" y="38" width="5" height="44" rx="2.5"/>
+                <rect x="236" y="42" width="5" height="36" rx="2.5"/>
+                <rect x="245" y="46" width="5" height="28" rx="2.5"/>
+                <rect x="254" y="49" width="5" height="22" rx="2.5"/>
+                <rect x="263" y="52" width="5" height="16" rx="2.5"/>
+                <rect x="272" y="54" width="5" height="12" rx="2.5"/>
+                <rect x="281" y="56" width="5" height="8" rx="2.5"/>
+                <rect x="290" y="57" width="5" height="6" rx="2.5"/>
+                <rect x="299" y="58" width="5" height="4" rx="2.5"/>
+                <!-- Центр (пауза под обложкой) -->
+                <rect x="308" y="58" width="5" height="4" rx="2.5"/>
+                <rect x="317" y="57" width="5" height="6" rx="2.5"/>
+                <rect x="326" y="56" width="5" height="8" rx="2.5"/>
+                <!-- Правая часть (зеркальная, затухание от центра к краю) -->
+                <rect x="335" y="54" width="5" height="12" rx="2.5"/>
+                <rect x="344" y="52" width="5" height="16" rx="2.5"/>
+                <rect x="353" y="49" width="5" height="22" rx="2.5"/>
+                <rect x="362" y="46" width="5" height="28" rx="2.5"/>
+                <rect x="371" y="42" width="5" height="36" rx="2.5"/>
+                <rect x="380" y="38" width="5" height="44" rx="2.5"/>
+                <rect x="389" y="33" width="5" height="54" rx="2.5"/>
+                <rect x="398" y="28" width="5" height="64" rx="2.5"/>
+                <rect x="407" y="23" width="5" height="74" rx="2.5"/>
+                <rect x="416" y="19" width="5" height="82" rx="2.5"/>
+                <rect x="425" y="16" width="5" height="88" rx="2.5"/>
+                <rect x="434" y="14" width="5" height="92" rx="2.5"/>
+                <rect x="443" y="12" width="5" height="96" rx="2.5"/>
+                <rect x="452" y="11" width="5" height="98" rx="2.5"/>
+                <rect x="461" y="10" width="5" height="100" rx="2.5"/>
+                <rect x="470" y="10" width="5" height="100" rx="2.5"/>
+                <rect x="479" y="11" width="5" height="98" rx="2.5"/>
+                <rect x="488" y="12" width="5" height="96" rx="2.5"/>
+                <rect x="497" y="14" width="5" height="92" rx="2.5"/>
+                <rect x="506" y="16" width="5" height="88" rx="2.5"/>
+                <rect x="515" y="19" width="5" height="82" rx="2.5"/>
+                <rect x="524" y="23" width="5" height="74" rx="2.5"/>
+                <rect x="533" y="28" width="5" height="64" rx="2.5"/>
+                <rect x="542" y="33" width="5" height="54" rx="2.5"/>
+                <rect x="551" y="38" width="5" height="44" rx="2.5"/>
+                <rect x="560" y="42" width="5" height="36" rx="2.5"/>
+                <rect x="569" y="46" width="5" height="28" rx="2.5"/>
+                <rect x="578" y="49" width="5" height="22" rx="2.5"/>
+                <rect x="587" y="52" width="5" height="16" rx="2.5"/>
+                <rect x="596" y="54" width="5" height="12" rx="2.5"/>
             </svg>
             <div class="cover-container" id="coverContainer">
                 <div class="cover-placeholder"></div>
@@ -359,9 +327,7 @@
         
         <p class="track-description hidden" id="trackDescription"></p>
         
-        <div class="loading-state" id="loadingState">
-            Подключение...
-        </div>
+        <div class="loading-state" id="loadingState">Подключение...</div>
         
         <div class="key-form hidden" id="keyForm">
             <p>Введите ключ доступа для прослушивания:</p>
@@ -371,7 +337,6 @@
         
         <div class="error-state hidden" id="errorState"></div>
         
-        <!-- Прогресс-бар -->
         <div class="progress-container hidden" id="progressContainer">
             <div class="time-label current" id="currentTime">0:00</div>
             <div class="progress-bar-wrapper" id="progressBarWrapper">
