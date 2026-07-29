@@ -267,7 +267,7 @@
                 if (!walks || walks.length === 0) {
                     container.innerHTML = `
                         <div class="empty">
-                            <div class="empty-icon">🎧</div>
+                            <div class="empty-icon"></div>
                             <div class="empty-text">У вас пока нет прогулок</div>
                         </div>
                     `;
@@ -279,7 +279,7 @@
                 container.innerHTML = walks.map(walk => {
                     const coverHtml = walk.cover_url 
                         ? `<img src="${walk.cover_url}" alt="${walk.title}">`
-                        : `<div class="walk-cover-placeholder"></div>`;
+                        : `<div class="walk-cover-placeholder">🎧</div>`;
                     
                     const durationText = formatDuration(walk.duration);
                     
@@ -303,18 +303,17 @@
                     `;
                 }).join('');
                 
-                // Обработчики кликов - переход на ПЛЕЕР (index.html)
+                // Переход на плеер
                 document.querySelectorAll('.walk-item').forEach(item => {
                     item.addEventListener('click', (e) => {
                         if (!e.target.closest('.walk-menu')) {
                             const walkId = item.dataset.id;
-                            console.log('🎵 Переход к плееру, трек:', walkId);
-                            // ВАЖНО: переходим на index.html (плеер), а не на my-walks.html
                             window.location.href = `index.html?track=${walkId}`;
                         }
                     });
                 });
                 
+                // Меню действий
                 document.querySelectorAll('.walk-menu').forEach(menu => {
                     menu.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -328,7 +327,7 @@
                 console.error('Ошибка загрузки:', error);
                 document.getElementById('walksList').innerHTML = `
                     <div class="empty">
-                        <div class="empty-icon">❌</div>
+                        <div class="empty-icon"></div>
                         <div class="empty-text">Ошибка загрузки прогулок</div>
                     </div>
                 `;
@@ -354,7 +353,6 @@
         
         document.getElementById('actionPlay').addEventListener('click', () => {
             if (currentWalk) {
-                // ВАЖНО: переходим на index.html (плеер)
                 window.location.href = `index.html?track=${currentWalk.id}`;
             }
         });
