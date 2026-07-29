@@ -254,26 +254,20 @@
         
         async function loadWalks() {
             try {
-                console.log('📥 Загрузка списка прогулок...');
                 const { data: walks, error } = await supabase
                     .from('tracks')
                     .select('*')
                     .eq('active', true)
                     .order('created_at', { ascending: false });
                 
-                if (error) {
-                    console.error('❌ Ошибка загрузки из БД:', error);
-                    throw error;
-                }
-                
-                console.log('✅ Загружено треков:', walks?.length || 0);
+                if (error) throw error;
                 
                 const container = document.getElementById('walksList');
                 
                 if (!walks || walks.length === 0) {
                     container.innerHTML = `
                         <div class="empty">
-                            <div class="empty-icon"></div>
+                            <div class="empty-icon">🎧</div>
                             <div class="empty-text">У вас пока нет прогулок</div>
                         </div>
                     `;
@@ -282,16 +276,14 @@
                 
                 container.className = 'walks-list';
                 
-                // Рендерим список
+                // Просто рендерим список с duration из БД
                 container.innerHTML = walks.map(walk => {
                     const coverHtml = walk.cover_url 
                         ? `<img src="${walk.cover_url}" alt="${walk.title}">`
                         : `<div class="walk-cover-placeholder">🎧</div>`;
                     
-                    // Показываем длительность из БД или "Загрузка..."
-                    const durationText = walk.duration 
-                        ? formatDuration(walk.duration) 
-                        : '⏳';
+                    // Показываем duration из БД
+                    const durationText = formatDuration(walk.duration);
                     
                     return `
                         <div class="walk-item" data-id="${walk.id}">
@@ -300,7 +292,7 @@
                             </div>
                             <div class="walk-info">
                                 <div class="walk-title">${walk.title}</div>
-                                <div class="walk-duration" id="duration-${walk.id}">${durationText}</div>
+                                <div class="walk-duration">${durationText}</div>
                             </div>
                             <div class="walk-menu" data-id="${walk.id}">
                                 <div class="walk-menu-dots">
@@ -313,58 +305,11 @@
                     `;
                 }).join('');
                 
-                // Для треков без duration - определяем на лету
-                const walksWithoutDuration = walks.filter(w => !w.duration);
-                
-                console.log(`🎵 Треков без длительности: ${walksWithoutDuration.length}`);
-                
-                if (walksWithoutDuration.length > 0) {
-                    // Определяем последовательно
-                    for (const walk of walksWithoutDuration) {
-                        try {
-                            console.log(`⏱️ Определяю длительность: ${walk.title}`);
-                            const duration = await getAudioDuration(walk.file_url);
-                            const roundedDuration = Math.round(duration);
-                            
-                            console.log(`✅ ${walk.title}: ${formatDuration(roundedDuration)}`);
-                            
-                            // Обновляем отображение
-                            const durationEl = document.getElementById(`duration-${walk.id}`);
-                            if (durationEl) {
-                                durationEl.textContent = formatDuration(roundedDuration);
-                            }
-                            
-                            // Сохраняем в БД
-                            const { error: updateError } = await supabase
-                                .from('tracks')
-                                .update({ duration: roundedDuration })
-                                .eq('id', walk.id);
-                            
-                            if (updateError) {
-                                console.error(`❌ Ошибка сохранения в БД:`, updateError);
-                            } else {
-                                console.log(`💾 Сохранено в БД`);
-                            }
-                            
-                        } catch (e) {
-                            console.error(`❌ Ошибка определения длительности ${walk.title}:`, e);
-                            const durationEl = document.getElementById(`duration-${walk.id}`);
-                            if (durationEl) {
-                                durationEl.textContent = '—';
-                            }
-                        }
-                        
-                        // Небольшая пауза между треками
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                    }
-                }
-                
                 // Обработчики кликов
                 document.querySelectorAll('.walk-item').forEach(item => {
                     item.addEventListener('click', (e) => {
                         if (!e.target.closest('.walk-menu')) {
                             const walkId = item.dataset.id;
-                            console.log(' Переход к треку:', walkId);
                             window.location.href = `index.html?track=${walkId}`;
                         }
                     });
@@ -380,47 +325,14 @@
                 });
                 
             } catch (error) {
-                console.error('💥 Критическая ошибка:', error);
+                console.error('Ошибка загрузки:', error);
                 document.getElementById('walksList').innerHTML = `
                     <div class="empty">
                         <div class="empty-icon">❌</div>
                         <div class="empty-text">Ошибка загрузки прогулок</div>
-                        <div style="font-size: 12px; margin-top: 10px; color: #e94560;">${error.message}</div>
                     </div>
                 `;
             }
-        }
-        
-        function getAudioDuration(url) {
-            return new Promise((resolve, reject) => {
-                console.log('🔊 Загрузка метаданных:', url);
-                
-                const audio = new Audio();
-                audio.preload = 'metadata';
-                
-                const timeout = setTimeout(() => {
-                    console.error(' Таймаут загрузки метаданных');
-                    audio.src = '';
-                    reject(new Error('Таймаут'));
-                }, 10000);
-                
-                audio.addEventListener('loadedmetadata', () => {
-                    console.log('✅ Метаданные загружены, длительность:', audio.duration);
-                    clearTimeout(timeout);
-                    audio.src = '';
-                    resolve(audio.duration);
-                });
-                
-                audio.addEventListener('error', (e) => {
-                    console.error('❌ Ошибка загрузки аудио:', e);
-                    clearTimeout(timeout);
-                    audio.src = '';
-                    reject(new Error('Ошибка загрузки'));
-                });
-                
-                // Добавляем timestamp чтобы избежать кэширования
-                audio.src = url + '?t=' + Date.now();
-            });
         }
         
         function openModal(walk) {
@@ -468,7 +380,6 @@
             }
         });
         
-        console.log('🚀 Инициализация страницы "Мои прогулки"');
         loadWalks();
     </script>
 </body>
