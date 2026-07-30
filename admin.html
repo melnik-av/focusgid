@@ -623,7 +623,7 @@
         </div>
         
         <div class="total-stats" id="totalStats">
-            <h3>📊 Общая статистика</h3>
+            <h3> Общая статистика</h3>
             <div class="stats-row">
                 <div class="stat-card">
                     <div class="stat-value" id="totalTracks">0</div>
@@ -650,7 +650,7 @@
         <div class="modal">
             <div class="modal-header">
                 <h2 class="modal-title">Добавить трек</h2>
-                <button class="modal-close" onclick="closeAddModal()">✕</button>
+                <button class="modal-close" onclick="closeAddModal()"></button>
             </div>
             <div class="modal-body">
                 <label class="field-label">Название трека *</label>
@@ -905,14 +905,14 @@
                     
                     '<div class="dropdown-menu" id="menu-' + t.id + '">' +
                         '<button class="dropdown-item" onclick="copyLink(\'' + trackLink + '\', \'' + t.title.replace(/'/g, "\\'") + '\')">' +
-                            '<span class="dropdown-icon">🔗</span> Копировать ссылку' +
+                            '<span class="dropdown-icon"></span> Копировать ссылку' +
                         '</button>' +
                         '<button class="dropdown-item" onclick="downloadQR(\'' + qrUrl + '\', \'' + t.title.replace(/'/g, "\\'") + '\')">' +
-                            '<span class="dropdown-icon">📱</span> Скачать QR-код' +
+                            '<span class="dropdown-icon"></span> Скачать QR-код' +
                         '</button>' +
                         '<div class="dropdown-divider"></div>' +
                         '<button class="dropdown-item" onclick="showEditForm(\'' + t.id + '\', \'' + t.title.replace(/'/g, "\\'") + '\', \'' + (t.description || '').replace(/'/g, "\\'") + '\', ' + t.price + ', ' + t.duration_days + ', \'' + (t.cover_url || '') + '\')">' +
-                            '<span class="dropdown-icon">✏️</span> Редактировать' +
+                            '<span class="dropdown-icon">️</span> Редактировать' +
                         '</button>' +
                         '<button class="dropdown-item" onclick="toggleTrack(\'' + t.id + '\', ' + !t.active + ')">' +
                             '<span class="dropdown-icon">' + statusIcon + '</span> ' + statusText +
@@ -1157,36 +1157,6 @@
             }
         };
 
-        // Определение длительности по URL (как в плеере)
-        function getAudioDurationFromUrl(url) {
-            return new Promise((resolve) => {
-                const audio = new Audio();
-                audio.preload = 'metadata';
-                
-                const timeout = setTimeout(() => {
-                    console.warn('⏱️ Таймаут определения длительности');
-                    audio.src = '';
-                    resolve(0);
-                }, 10000);
-                
-                audio.addEventListener('loadedmetadata', () => {
-                    clearTimeout(timeout);
-                    audio.src = '';
-                    console.log('✅ Длительность определена:', audio.duration, 'сек');
-                    resolve(audio.duration);
-                });
-                
-                audio.addEventListener('error', (e) => {
-                    console.warn('⚠️ Не удалось определить длительность');
-                    clearTimeout(timeout);
-                    audio.src = '';
-                    resolve(0);
-                });
-                
-                audio.src = url + '?t=' + Date.now();
-            });
-        }
-
         window.uploadTrack = async () => {
             const status = document.getElementById('modalStatus');
             const uploadBtn = document.getElementById('uploadBtn');
@@ -1227,13 +1197,6 @@
                     .from('tracks')
                     .getPublicUrl(audioFileName);
 
-                // Определяем длительность по URL (как в плеере)
-                status.textContent = 'Определение длительности...';
-                console.log('⏱️ Определение длительности по URL...');
-                
-                const duration = await getAudioDurationFromUrl(audioUrl);
-                console.log('✅ Длительность:', duration, 'сек');
-
                 let coverUrl = null;
                 if (selectedCoverFile) {
                     status.textContent = 'Загрузка обложки...';
@@ -1257,12 +1220,13 @@
 
                 status.textContent = 'Создание записи в базе...';
                 
+                // Создаём запись БЕЗ длительности
                 const trackData = {
                     title,
                     description: description || null,
                     price,
                     duration_days: days,
-                    duration: duration > 0 ? Math.round(duration) : null,
+                    duration: null,
                     file_url: audioUrl,
                     active: true,
                     play_count: 0
