@@ -623,7 +623,7 @@
         </div>
         
         <div class="total-stats" id="totalStats">
-            <h3> Общая статистика</h3>
+            <h3>📊 Общая статистика</h3>
             <div class="stats-row">
                 <div class="stat-card">
                     <div class="stat-value" id="totalTracks">0</div>
@@ -782,7 +782,7 @@
                     : 'removeEditCover(\'' + containerId.replace('edit-cover-preview-', '') + '\')';
                 container.innerHTML = 
                     '<img src="' + imageUrl + '" alt="Обложка">' +
-                    '<button class="cover-delete-btn" onclick="event.stopPropagation(); ' + deleteCall + '" title="Удалить обложку"></button>';
+                    '<button class="cover-delete-btn" onclick="event.stopPropagation(); ' + deleteCall + '" title="Удалить обложку">🗑</button>';
             } else {
                 container.innerHTML = 
                     '<div class="cover-preview-placeholder">' +
@@ -890,7 +890,7 @@
                     : '';
                 
                 const statusText = t.active ? 'Отключить' : 'Включить';
-                const statusIcon = t.active ? '⏸' : '▶';
+                const statusIcon = t.active ? '' : '▶';
                 
                 return '<div class="track-item" id="track-' + t.id + '">' +
                     '<div class="track-header">' +
@@ -905,10 +905,10 @@
                     
                     '<div class="dropdown-menu" id="menu-' + t.id + '">' +
                         '<button class="dropdown-item" onclick="copyLink(\'' + trackLink + '\', \'' + t.title.replace(/'/g, "\\'") + '\')">' +
-                            '<span class="dropdown-icon"></span> Копировать ссылку' +
+                            '<span class="dropdown-icon">🔗</span> Копировать ссылку' +
                         '</button>' +
                         '<button class="dropdown-item" onclick="downloadQR(\'' + qrUrl + '\', \'' + t.title.replace(/'/g, "\\'") + '\')">' +
-                            '<span class="dropdown-icon"></span> Скачать QR-код' +
+                            '<span class="dropdown-icon">📱</span> Скачать QR-код' +
                         '</button>' +
                         '<div class="dropdown-divider"></div>' +
                         '<button class="dropdown-item" onclick="showEditForm(\'' + t.id + '\', \'' + t.title.replace(/'/g, "\\'") + '\', \'' + (t.description || '').replace(/'/g, "\\'") + '\', ' + t.price + ', ' + t.duration_days + ', \'' + (t.cover_url || '') + '\')">' +
@@ -1157,34 +1157,33 @@
             }
         };
 
-        // Определение длительности из локального файла (без CORS проблем)
-        function getAudioDurationFromFile(file) {
-            return new Promise((resolve, reject) => {
+        // Определение длительности по URL (как в плеере)
+        function getAudioDurationFromUrl(url) {
+            return new Promise((resolve) => {
                 const audio = new Audio();
-                const url = URL.createObjectURL(file);
+                audio.preload = 'metadata';
                 
                 const timeout = setTimeout(() => {
-                    URL.revokeObjectURL(url);
+                    console.warn('⏱️ Таймаут определения длительности');
                     audio.src = '';
-                    reject(new Error('Таймаут'));
+                    resolve(0);
                 }, 10000);
                 
                 audio.addEventListener('loadedmetadata', () => {
                     clearTimeout(timeout);
-                    URL.revokeObjectURL(url);
                     audio.src = '';
+                    console.log('✅ Длительность определена:', audio.duration, 'сек');
                     resolve(audio.duration);
                 });
                 
                 audio.addEventListener('error', (e) => {
+                    console.warn('⚠️ Не удалось определить длительность');
                     clearTimeout(timeout);
-                    URL.revokeObjectURL(url);
                     audio.src = '';
-                    console.error('Ошибка определения длительности:', e);
-                    reject(new Error('Не удалось определить длительность'));
+                    resolve(0);
                 });
                 
-                audio.src = url;
+                audio.src = url + '?t=' + Date.now();
             });
         }
 
@@ -1209,16 +1208,10 @@
                 return;
             }
 
-            status.textContent = 'Определение длительности...';
+            status.textContent = 'Загрузка аудио...';
             uploadBtn.disabled = true;
 
             try {
-                // Определяем длительность локально ДО загрузки в Storage
-                const duration = await getAudioDurationFromFile(file);
-                console.log('✅ Длительность:', duration, 'сек');
-
-                status.textContent = 'Загрузка аудио...';
-                
                 const audioFileName = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
                 
                 const { error: audioUploadError } = await supabase.storage
@@ -1233,6 +1226,13 @@
                 const { data: { publicUrl: audioUrl } } = supabase.storage
                     .from('tracks')
                     .getPublicUrl(audioFileName);
+
+                // Определяем длительность по URL (как в плеере)
+                status.textContent = 'Определение длительности...';
+                console.log('⏱️ Определение длительности по URL...');
+                
+                const duration = await getAudioDurationFromUrl(audioUrl);
+                console.log('✅ Длительность:', duration, 'сек');
 
                 let coverUrl = null;
                 if (selectedCoverFile) {
@@ -1262,7 +1262,7 @@
                     description: description || null,
                     price,
                     duration_days: days,
-                    duration: Math.round(duration),
+                    duration: duration > 0 ? Math.round(duration) : null,
                     file_url: audioUrl,
                     active: true,
                     play_count: 0
