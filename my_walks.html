@@ -34,12 +34,12 @@
         .walks-list {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 20px;
         }
         
         .walk-item {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 16px;
             padding: 8px 0;
             cursor: pointer;
@@ -78,21 +78,36 @@
         .walk-info {
             flex: 1;
             min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         
         .walk-title {
             font-size: 18px;
             font-weight: 600;
             color: #1a1a1a;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             line-height: 1.3;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
         
+        .walk-description {
+            font-size: 13px;
+            color: #999999;
+            line-height: 1.4;
+            margin-bottom: 6px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
         .walk-duration {
-            font-size: 14px;
+            font-size: 13px;
             color: #999999;
             font-variant-numeric: tabular-nums;
         }
@@ -107,6 +122,7 @@
             border-radius: 50%;
             transition: background 0.2s;
             flex-shrink: 0;
+            margin-top: 4px;
         }
         
         .walk-menu:hover { background: #f5f5f5; }
@@ -211,6 +227,7 @@
             h1 { font-size: 28px; }
             .walk-cover { width: 70px; height: 70px; }
             .walk-title { font-size: 16px; }
+            .walk-description { font-size: 12px; }
         }
     </style>
 </head>
@@ -229,7 +246,7 @@
             <div class="modal-actions">
                 <div class="modal-action" id="actionPlay">▶️ Слушать</div>
                 <div class="modal-action" id="actionShare">📤 Поделиться</div>
-                <div class="modal-action danger" id="actionDelete">🗑️ Удалить</div>
+                <div class="modal-action danger" id="actionDelete">️ Удалить</div>
             </div>
             <div class="modal-close" id="modalClose">Отмена</div>
         </div>
@@ -241,14 +258,14 @@
         let currentWalk = null;
         
         function formatDuration(seconds) {
-            if (!seconds || isNaN(seconds)) return '—';
+            if (!seconds || isNaN(seconds)) return '';
             const hours = Math.floor(seconds / 3600);
             const mins = Math.floor((seconds % 3600) / 60);
             const secs = Math.floor(seconds % 60);
             if (hours > 0) {
-                return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                return hours + ':' + mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
             } else {
-                return `${mins}:${secs.toString().padStart(2, '0')}`;
+                return mins + ':' + secs.toString().padStart(2, '0');
             }
         }
         
@@ -267,7 +284,7 @@
                 if (!walks || walks.length === 0) {
                     container.innerHTML = `
                         <div class="empty">
-                            <div class="empty-icon"></div>
+                            <div class="empty-icon">🎧</div>
                             <div class="empty-text">У вас пока нет прогулок</div>
                         </div>
                     `;
@@ -278,42 +295,41 @@
                 
                 container.innerHTML = walks.map(walk => {
                     const coverHtml = walk.cover_url 
-                        ? `<img src="${walk.cover_url}" alt="${walk.title}">`
-                        : `<div class="walk-cover-placeholder">🎧</div>`;
+                        ? '<img src="' + walk.cover_url + '" alt="' + walk.title + '">'
+                        : '<div class="walk-cover-placeholder">🎧</div>';
                     
                     const durationText = formatDuration(walk.duration);
+                    const durationHtml = durationText ? '<div class="walk-duration">' + durationText + '</div>' : '';
                     
-                    return `
-                        <div class="walk-item" data-id="${walk.id}">
-                            <div class="walk-cover">
-                                ${coverHtml}
-                            </div>
-                            <div class="walk-info">
-                                <div class="walk-title">${walk.title}</div>
-                                <div class="walk-duration">${durationText}</div>
-                            </div>
-                            <div class="walk-menu" data-id="${walk.id}">
-                                <div class="walk-menu-dots">
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                    // Описание — только если есть
+                    const descriptionHtml = walk.description 
+                        ? '<div class="walk-description">' + walk.description + '</div>'
+                        : '';
+                    
+                    return '<div class="walk-item" data-id="' + walk.id + '">' +
+                        '<div class="walk-cover">' + coverHtml + '</div>' +
+                        '<div class="walk-info">' +
+                            '<div class="walk-title">' + walk.title + '</div>' +
+                            descriptionHtml +
+                            durationHtml +
+                        '</div>' +
+                        '<div class="walk-menu" data-id="' + walk.id + '">' +
+                            '<div class="walk-menu-dots">' +
+                                '<span></span><span></span><span></span>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
                 }).join('');
                 
-                // Переход на плеер
                 document.querySelectorAll('.walk-item').forEach(item => {
                     item.addEventListener('click', (e) => {
                         if (!e.target.closest('.walk-menu')) {
                             const walkId = item.dataset.id;
-                            window.location.href = `index.html?track=${walkId}`;
+                            window.location.href = 'index.html?track=' + walkId;
                         }
                     });
                 });
                 
-                // Меню действий
                 document.querySelectorAll('.walk-menu').forEach(menu => {
                     menu.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -327,7 +343,7 @@
                 console.error('Ошибка загрузки:', error);
                 document.getElementById('walksList').innerHTML = `
                     <div class="empty">
-                        <div class="empty-icon"></div>
+                        <div class="empty-icon">❌</div>
                         <div class="empty-text">Ошибка загрузки прогулок</div>
                     </div>
                 `;
@@ -353,13 +369,13 @@
         
         document.getElementById('actionPlay').addEventListener('click', () => {
             if (currentWalk) {
-                window.location.href = `index.html?track=${currentWalk.id}`;
+                window.location.href = 'index.html?track=' + currentWalk.id;
             }
         });
         
         document.getElementById('actionShare').addEventListener('click', async () => {
             if (currentWalk) {
-                const shareUrl = `${window.location.origin}/index.html?track=${currentWalk.id}`;
+                const shareUrl = window.location.origin + '/index.html?track=' + currentWalk.id;
                 try {
                     if (navigator.share) {
                         await navigator.share({ title: currentWalk.title, url: shareUrl });
@@ -374,7 +390,7 @@
         });
         
         document.getElementById('actionDelete').addEventListener('click', () => {
-            if (currentWalk && confirm(`Удалить "${currentWalk.title}"?`)) {
+            if (currentWalk && confirm('Удалить "' + currentWalk.title + '"?')) {
                 alert('Функция удаления будет добавлена позже');
             }
         });
