@@ -42,20 +42,14 @@
             border-radius: 12px;
             padding: 20px;
             display: flex;
-            flex-direction: column;
             gap: 16px;
+            align-items: flex-start;
             transition: all 0.2s;
         }
         
         .walk-item:hover {
             border-color: #1a1a1a;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        }
-        
-        .walk-header {
-            display: flex;
-            gap: 16px;
-            align-items: flex-start;
         }
         
         .walk-cover {
@@ -65,6 +59,8 @@
             overflow: hidden;
             flex-shrink: 0;
             background: #f5f5f5;
+            position: relative;
+            cursor: pointer;
         }
         
         .walk-cover img { 
@@ -84,12 +80,54 @@
             font-size: 32px;
         }
         
+        /* Оверлей с иконкой play */
+        .walk-cover-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .walk-cover:hover .walk-cover-overlay {
+            opacity: 1;
+        }
+        
+        .walk-cover.playing .walk-cover-overlay {
+            opacity: 1;
+            background: rgba(0, 0, 0, 0.6);
+        }
+        
+        .play-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #1a1a1a;
+            transition: transform 0.2s;
+        }
+        
+        .walk-cover:hover .play-icon {
+            transform: scale(1.1);
+        }
+        
         .walk-info {
             flex: 1;
             min-width: 0;
             display: flex;
             flex-direction: column;
             gap: 6px;
+            cursor: pointer;
         }
         
         .walk-title { 
@@ -124,54 +162,6 @@
             gap: 4px;
         }
         
-        .walk-actions {
-            display: flex;
-            gap: 8px;
-        }
-        
-        .btn {
-            flex: 1;
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
-            background: #ffffff;
-            color: #1a1a1a;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: inherit;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-        
-        .btn:hover {
-            background: #f5f5f5;
-            border-color: #1a1a1a;
-        }
-        
-        .btn-primary {
-            background: #1a1a1a;
-            color: #ffffff;
-            border: none;
-        }
-        
-        .btn-primary:hover {
-            background: #333333;
-        }
-        
-        .btn-playing {
-            background: #e94560;
-            color: #ffffff;
-            border: none;
-        }
-        
-        .btn-playing:hover {
-            background: #d63851;
-        }
-        
         .loading {
             text-align: center;
             padding: 60px 20px;
@@ -200,12 +190,13 @@
             h1 { font-size: 26px; }
             .walk-cover { width: 80px; height: 80px; }
             .walk-title { font-size: 16px; }
+            .play-icon { width: 30px; height: 30px; font-size: 12px; }
         }
     </style>
 </head>
 <body>
     <h1>Каталог прогулок</h1>
-    <div class="subtitle">Выберите аудиопрогулку и отправьтесь в путешествие</div>
+    <div class="subtitle">Нажмите на обложку для превью · на название для открытия</div>
     
     <div id="walksList" class="loading">
         Загрузка...
@@ -250,30 +241,27 @@
                     const duration = formatDuration(walk.duration);
                     const durationHtml = duration ? '<span class="walk-meta-item">🕐 ' + duration + '</span>' : '';
                     const priceHtml = '<span class="walk-meta-item">' + walk.price + ' руб</span>';
-                    const daysHtml = '<span class="walk-meta-item">' + walk.duration_days + ' дней доступа</span>';
+                    const daysHtml = '<span class="walk-meta-item">' + walk.duration_days + ' дней</span>';
                     
                     const descriptionHtml = walk.description 
                         ? '<div class="walk-description">' + walk.description + '</div>'
                         : '';
                     
-                    return '<div class="walk-item" id="walk-' + walk.id + '">' +
-                        '<div class="walk-header">' +
-                            '<div class="walk-cover">' + coverHtml + '</div>' +
-                            '<div class="walk-info">' +
-                                '<div class="walk-title">' + walk.title + '</div>' +
-                                descriptionHtml +
-                                '<div class="walk-meta">' +
-                                    priceHtml +
-                                    durationHtml +
-                                    daysHtml +
-                                '</div>' +
+                    return '<div class="walk-item">' +
+                        '<div class="walk-cover" id="cover-' + walk.id + '" onclick="togglePreview(\'' + walk.id + '\', \'' + walk.file_url.replace(/'/g, "\\'") + '\')">' +
+                            coverHtml +
+                            '<div class="walk-cover-overlay">' +
+                                '<div class="play-icon" id="play-icon-' + walk.id + '">▶</div>' +
                             '</div>' +
                         '</div>' +
-                        '<div class="walk-actions">' +
-                            '<button class="btn" id="preview-btn-' + walk.id + '" onclick="togglePreview(\'' + walk.id + '\', \'' + walk.file_url.replace(/'/g, "\\'") + '\')">' +
-                                '▶️ 30 сек' +
-                            '</button>' +
-                            '<button class="btn btn-primary" onclick="openWalk(\'' + walk.id + '\')">Открыть</button>' +
+                        '<div class="walk-info" onclick="openWalk(\'' + walk.id + '\')">' +
+                            '<div class="walk-title">' + walk.title + '</div>' +
+                            descriptionHtml +
+                            '<div class="walk-meta">' +
+                                priceHtml +
+                                durationHtml +
+                                daysHtml +
+                            '</div>' +
                         '</div>' +
                     '</div>';
                 }).join('');
@@ -297,7 +285,8 @@
         }
         
         window.togglePreview = async (id, audioUrl) => {
-            const btn = document.getElementById('preview-btn-' + id);
+            const cover = document.getElementById('cover-' + id);
+            const playIcon = document.getElementById('play-icon-' + id);
             
             // Если уже играет этот трек — останавливаем
             if (currentPreviewId === id && currentAudio) {
@@ -305,7 +294,7 @@
                 return;
             }
             
-            // Останавливаем предыдущий превью если есть
+            // Останавливаем предыдущий превью
             stopPreview();
             
             // Создаём новый аудио элемент
@@ -315,9 +304,9 @@
             try {
                 await currentAudio.play();
                 
-                // Меняем кнопку на "Стоп"
-                btn.innerHTML = '⏹️ Стоп';
-                btn.classList.add('btn-playing');
+                // Показываем иконку паузы
+                cover.classList.add('playing');
+                playIcon.textContent = '⏸';
                 currentPreviewId = id;
                 
                 // Останавливаем через 30 секунд
@@ -332,7 +321,6 @@
                 
             } catch (error) {
                 console.error('Ошибка воспроизведения:', error);
-                alert('Не удалось воспроизвести превью');
             }
         };
         
@@ -349,33 +337,17 @@
             }
             
             if (currentPreviewId) {
-                const btn = document.getElementById('preview-btn-' + currentPreviewId);
-                if (btn) {
-                    btn.innerHTML = '▶️ 30 сек';
-                    btn.classList.remove('btn-playing');
-                }
+                const cover = document.getElementById('cover-' + currentPreviewId);
+                const playIcon = document.getElementById('play-icon-' + currentPreviewId);
+                if (cover) cover.classList.remove('playing');
+                if (playIcon) playIcon.textContent = '▶';
                 currentPreviewId = null;
             }
         };
         
         window.openWalk = (id) => {
-            // Останавливаем превью если играет
             stopPreview();
             window.location.href = 'index.html?track=' + id;
-        };
-        
-        window.shareWalk = async (id, title) => {
-            const shareUrl = window.location.origin + '/index.html?track=' + id;
-            try {
-                if (navigator.share) {
-                    await navigator.share({ title: title, url: shareUrl });
-                } else {
-                    await navigator.clipboard.writeText(shareUrl);
-                    alert('Ссылка скопирована!');
-                }
-            } catch (error) {
-                console.error('Ошибка поделиться:', error);
-            }
         };
         
         loadWalks();
