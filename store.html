@@ -115,6 +115,7 @@
             gap: 16px;
             font-size: 13px;
             color: #666666;
+            flex-wrap: wrap;
         }
         
         .walk-meta-item {
@@ -140,6 +141,10 @@
             cursor: pointer;
             transition: all 0.2s;
             font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
         
         .btn:hover {
@@ -155,6 +160,16 @@
         
         .btn-primary:hover {
             background: #333333;
+        }
+        
+        .btn-playing {
+            background: #e94560;
+            color: #ffffff;
+            border: none;
+        }
+        
+        .btn-playing:hover {
+            background: #d63851;
         }
         
         .loading {
@@ -199,6 +214,10 @@
     <script type="module">
         import { supabase } from './supabase-config.js';
         
+        let currentAudio = null;
+        let currentPreviewId = null;
+        let previewTimeout = null;
+        
         async function loadWalks() {
             const container = document.getElementById('walksList');
             
@@ -237,7 +256,7 @@
                         ? '<div class="walk-description">' + walk.description + '</div>'
                         : '';
                     
-                    return '<div class="walk-item">' +
+                    return '<div class="walk-item" id="walk-' + walk.id + '">' +
                         '<div class="walk-header">' +
                             '<div class="walk-cover">' + coverHtml + '</div>' +
                             '<div class="walk-info">' +
@@ -251,7 +270,9 @@
                             '</div>' +
                         '</div>' +
                         '<div class="walk-actions">' +
-                            '<button class="btn" onclick="shareWalk(\'' + walk.id + '\', \'' + walk.title.replace(/'/g, "\\'") + '\')">Поделиться</button>' +
+                            '<button class="btn" id="preview-btn-' + walk.id + '" onclick="togglePreview(\'' + walk.id + '\', \'' + walk.file_url.replace(/'/g, "\\'") + '\')">' +
+                                '▶️ 30 сек' +
+                            '</button>' +
                             '<button class="btn btn-primary" onclick="openWalk(\'' + walk.id + '\')">Открыть</button>' +
                         '</div>' +
                     '</div>';
@@ -275,7 +296,71 @@
             }
         }
         
+        window.togglePreview = async (id, audioUrl) => {
+            const btn = document.getElementById('preview-btn-' + id);
+            
+            // Если уже играет этот трек — останавливаем
+            if (currentPreviewId === id && currentAudio) {
+                stopPreview();
+                return;
+            }
+            
+            // Останавливаем предыдущий превью если есть
+            stopPreview();
+            
+            // Создаём новый аудио элемент
+            currentAudio = new Audio(audioUrl);
+            currentAudio.preload = 'auto';
+            
+            try {
+                await currentAudio.play();
+                
+                // Меняем кнопку на "Стоп"
+                btn.innerHTML = '⏹️ Стоп';
+                btn.classList.add('btn-playing');
+                currentPreviewId = id;
+                
+                // Останавливаем через 30 секунд
+                previewTimeout = setTimeout(() => {
+                    stopPreview();
+                }, 30000);
+                
+                // Если аудио закончилось раньше
+                currentAudio.addEventListener('ended', () => {
+                    stopPreview();
+                });
+                
+            } catch (error) {
+                console.error('Ошибка воспроизведения:', error);
+                alert('Не удалось воспроизвести превью');
+            }
+        };
+        
+        window.stopPreview = () => {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.src = '';
+                currentAudio = null;
+            }
+            
+            if (previewTimeout) {
+                clearTimeout(previewTimeout);
+                previewTimeout = null;
+            }
+            
+            if (currentPreviewId) {
+                const btn = document.getElementById('preview-btn-' + currentPreviewId);
+                if (btn) {
+                    btn.innerHTML = '▶️ 30 сек';
+                    btn.classList.remove('btn-playing');
+                }
+                currentPreviewId = null;
+            }
+        };
+        
         window.openWalk = (id) => {
+            // Останавливаем превью если играет
+            stopPreview();
             window.location.href = 'index.html?track=' + id;
         };
         
