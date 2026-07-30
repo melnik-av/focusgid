@@ -33,6 +33,14 @@
             letter-spacing: -0.5px;
         }
         
+        h2 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            letter-spacing: -0.3px;
+        }
+        
         .add-track-btn {
             background: #1a1a1a;
             color: #ffffff;
@@ -97,6 +105,16 @@
         button:disabled { 
             background: #cccccc; 
             cursor: not-allowed; 
+        }
+        
+        #status { 
+            margin-top: 20px; 
+            padding: 16px; 
+            background: #ffffff; 
+            border: 1px solid #e0e0e0;
+            border-radius: 8px; 
+            min-height: 20px; 
+            font-size: 14px;
         }
         
         .hidden { display: none !important; }
@@ -363,7 +381,6 @@
             margin: 0; 
         }
         
-        /* Обложка — кликабельная область */
         .cover-upload { 
             margin: 16px 0; 
         }
@@ -411,7 +428,6 @@
             margin-bottom: 8px;
         }
         
-        /* Кнопка удаления обложки */
         .cover-delete-btn {
             position: absolute;
             top: 8px;
@@ -467,7 +483,6 @@
             display: block;
         }
         
-        /* Модальное окно добавления трека */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -572,17 +587,6 @@
             min-height: 20px;
         }
         
-        /* Статус загрузки */
-        #status { 
-            margin-top: 20px; 
-            padding: 16px; 
-            background: #ffffff; 
-            border: 1px solid #e0e0e0;
-            border-radius: 8px; 
-            min-height: 20px; 
-            font-size: 14px;
-        }
-        
         @media (max-width: 480px) {
             .header {
                 flex-direction: column;
@@ -619,7 +623,7 @@
         </div>
         
         <div class="total-stats" id="totalStats">
-            <h3>📊 Общая статистика</h3>
+            <h3> Общая статистика</h3>
             <div class="stats-row">
                 <div class="stat-card">
                     <div class="stat-value" id="totalTracks">0</div>
@@ -640,10 +644,8 @@
         <div id="tracksList"></div>
     </div>
     
-    <!-- Оверлей для меню -->
     <div class="menu-overlay" id="menuOverlay"></div>
     
-    <!-- Модальное окно добавления трека -->
     <div class="modal-overlay" id="addModal">
         <div class="modal">
             <div class="modal-header">
@@ -723,7 +725,6 @@
             }
         });
 
-        // Модалка добавления трека
         window.openAddModal = () => {
             document.getElementById('addModal').classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -760,7 +761,6 @@
             }
         });
 
-        // Обработчик выбора обложки
         document.getElementById('coverFile').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -774,15 +774,15 @@
             }
         });
 
-        // Рендер превью обложки (с кнопкой удаления или без)
         function renderCoverPreview(containerId, imageUrl, showDelete) {
             const container = document.getElementById(containerId);
             if (showDelete && imageUrl) {
+                const deleteCall = containerId === 'coverPreview' 
+                    ? 'removeCover()' 
+                    : 'removeEditCover(\'' + containerId.replace('edit-cover-preview-', '') + '\')';
                 container.innerHTML = 
                     '<img src="' + imageUrl + '" alt="Обложка">' +
-                    '<button class="cover-delete-btn" onclick="event.stopPropagation(); ' + 
-                    (containerId === 'coverPreview' ? 'removeCover()' : 'removeEditCover(\'' + containerId.replace('edit-cover-preview-', '') + '\')') + 
-                    '" title="Удалить обложку">🗑</button>';
+                    '<button class="cover-delete-btn" onclick="event.stopPropagation(); ' + deleteCall + '" title="Удалить обложку"></button>';
             } else {
                 container.innerHTML = 
                     '<div class="cover-preview-placeholder">' +
@@ -890,7 +890,7 @@
                     : '';
                 
                 const statusText = t.active ? 'Отключить' : 'Включить';
-                const statusIcon = t.active ? '' : '▶';
+                const statusIcon = t.active ? '⏸' : '▶';
                 
                 return '<div class="track-item" id="track-' + t.id + '">' +
                     '<div class="track-header">' +
@@ -990,7 +990,6 @@
             
             trackItem.appendChild(form);
             
-            // Рендерим текущую обложку
             renderCoverPreview('edit-cover-preview-' + id, coverUrl, !!coverUrl);
             
             document.getElementById('edit-cover-file-' + id).addEventListener('change', (e) => {
@@ -1039,7 +1038,7 @@
                     const blob = await response.blob();
                     
                     const fileName = 'cover_' + Date.now() + '_' + id + '.jpg';
-                    const { error: uploadError, data } = await supabase.storage
+                    const { error: uploadError } = await supabase.storage
                         .from('covers')
                         .upload(fileName, blob, {
                             cacheControl: '3600',
@@ -1158,6 +1157,37 @@
             }
         };
 
+        // Определение длительности из локального файла (без CORS проблем)
+        function getAudioDurationFromFile(file) {
+            return new Promise((resolve, reject) => {
+                const audio = new Audio();
+                const url = URL.createObjectURL(file);
+                
+                const timeout = setTimeout(() => {
+                    URL.revokeObjectURL(url);
+                    audio.src = '';
+                    reject(new Error('Таймаут'));
+                }, 10000);
+                
+                audio.addEventListener('loadedmetadata', () => {
+                    clearTimeout(timeout);
+                    URL.revokeObjectURL(url);
+                    audio.src = '';
+                    resolve(audio.duration);
+                });
+                
+                audio.addEventListener('error', (e) => {
+                    clearTimeout(timeout);
+                    URL.revokeObjectURL(url);
+                    audio.src = '';
+                    console.error('Ошибка определения длительности:', e);
+                    reject(new Error('Не удалось определить длительность'));
+                });
+                
+                audio.src = url;
+            });
+        }
+
         window.uploadTrack = async () => {
             const status = document.getElementById('modalStatus');
             const uploadBtn = document.getElementById('uploadBtn');
@@ -1179,10 +1209,16 @@
                 return;
             }
 
-            status.textContent = 'Загрузка аудио...';
+            status.textContent = 'Определение длительности...';
             uploadBtn.disabled = true;
 
             try {
+                // Определяем длительность локально ДО загрузки в Storage
+                const duration = await getAudioDurationFromFile(file);
+                console.log('✅ Длительность:', duration, 'сек');
+
+                status.textContent = 'Загрузка аудио...';
+                
                 const audioFileName = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
                 
                 const { error: audioUploadError } = await supabase.storage
@@ -1197,10 +1233,6 @@
                 const { data: { publicUrl: audioUrl } } = supabase.storage
                     .from('tracks')
                     .getPublicUrl(audioFileName);
-
-                status.textContent = 'Определение длительности...';
-                
-                const duration = await getAudioDuration(audioUrl);
 
                 let coverUrl = null;
                 if (selectedCoverFile) {
@@ -1240,7 +1272,7 @@
                     trackData.cover_url = coverUrl;
                 }
                 
-                const { error: dbError, data: dbData } = await supabase
+                const { error: dbError } = await supabase
                     .from('tracks')
                     .insert(trackData)
                     .select();
@@ -1263,32 +1295,6 @@
                 uploadBtn.disabled = false;
             }
         };
-
-        function getAudioDuration(url) {
-            return new Promise((resolve, reject) => {
-                const audio = new Audio();
-                audio.preload = 'metadata';
-                
-                const timeout = setTimeout(() => {
-                    audio.src = '';
-                    reject(new Error('Таймаут'));
-                }, 10000);
-                
-                audio.addEventListener('loadedmetadata', () => {
-                    clearTimeout(timeout);
-                    audio.src = '';
-                    resolve(audio.duration);
-                });
-                
-                audio.addEventListener('error', (e) => {
-                    clearTimeout(timeout);
-                    audio.src = '';
-                    reject(new Error('Не удалось определить длительность'));
-                });
-                
-                audio.src = url + '?t=' + Date.now();
-            });
-        }
     </script>
 </body>
 </html>
