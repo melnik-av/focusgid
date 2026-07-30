@@ -125,17 +125,30 @@
         }
         
         .track-item {
-            padding: 24px; 
+            padding: 20px; 
             background: #ffffff; 
             margin: 16px 0; 
             border-radius: 12px;
             border: 1px solid #e0e0e0;
+            position: relative;
+        }
+        
+        .track-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        
+        .track-header-content {
+            flex: 1;
+            min-width: 0;
         }
         
         .track-title { 
             font-weight: 600; 
             font-size: 18px; 
-            margin-bottom: 8px; 
+            margin-bottom: 6px; 
         }
         
         .track-description { 
@@ -148,7 +161,21 @@
         .track-meta { 
             font-size: 13px; 
             color: #999999;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .track-cover-thumb {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        .track-cover-thumb img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
         }
         
         .track-link { 
@@ -156,7 +183,7 @@
             color: #999999; 
             word-break: break-all;
             font-family: 'SF Mono', Monaco, monospace;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             padding: 8px 12px;
             background: #f5f5f5;
             border-radius: 6px;
@@ -165,7 +192,7 @@
         .stats-row {
             display: flex;
             gap: 12px;
-            margin: 16px 0;
+            margin: 12px 0;
             flex-wrap: wrap;
         }
         
@@ -173,13 +200,13 @@
             flex: 1;
             min-width: 120px;
             background: #f5f5f5;
-            padding: 16px;
+            padding: 12px;
             border-radius: 8px;
             text-align: center;
         }
         
         .stat-value { 
-            font-size: 24px; 
+            font-size: 22px; 
             font-weight: 700; 
             color: #1a1a1a; 
             margin-bottom: 4px; 
@@ -192,76 +219,88 @@
             letter-spacing: 0.5px;
         }
         
-        .stat-icon { 
-            font-size: 18px; 
-            margin-bottom: 8px; 
+        /* Кнопка меню (три точки) */
+        .menu-button {
+            width: 36px;
+            height: 36px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #999999;
+            padding: 0;
+            margin: 0;
+            flex-shrink: 0;
+            transition: all 0.2s;
         }
         
-        .track-actions { 
-            display: flex; 
-            gap: 8px; 
-            flex-wrap: wrap; 
-            margin-top: 20px; 
+        .menu-button:hover {
+            background: #f5f5f5;
+            color: #1a1a1a;
         }
         
-        .track-actions button { 
-            flex: 1; 
-            min-width: 120px;
-            padding: 12px 16px;
+        /* Выпадающее меню */
+        .dropdown-menu {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            min-width: 200px;
+            z-index: 100;
+            display: none;
+            overflow: hidden;
+        }
+        
+        .dropdown-menu.active {
+            display: block;
+        }
+        
+        .dropdown-item {
+            padding: 14px 20px;
+            cursor: pointer;
             font-size: 14px;
-        }
-        
-        .btn-edit { 
-            background: #ffffff; 
             color: #1a1a1a;
-            border: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            margin: 0;
+            border-radius: 0;
         }
         
-        .btn-edit:hover { 
-            background: #f5f5f5; 
-            border-color: #1a1a1a;
+        .dropdown-item:hover {
+            background: #f5f5f5;
         }
         
-        .btn-copy { 
-            background: #ffffff; 
-            color: #1a1a1a;
-            border: 1px solid #e0e0e0;
-        }
-        
-        .btn-copy:hover { 
-            background: #f5f5f5; 
-            border-color: #1a1a1a;
-        }
-        
-        .btn-save { 
-            background: #1a1a1a; 
-            color: #ffffff;
-        }
-        
-        .btn-save:hover { 
-            background: #333333; 
-        }
-        
-        .btn-cancel { 
-            background: #ffffff; 
-            color: #1a1a1a;
-            border: 1px solid #e0e0e0;
-        }
-        
-        .btn-cancel:hover { 
-            background: #f5f5f5; 
-            border-color: #1a1a1a;
-        }
-        
-        .btn-delete { 
-            background: #ffffff; 
+        .dropdown-item.danger {
             color: #e94560;
-            border: 1px solid #e0e0e0;
         }
         
-        .btn-delete:hover { 
-            background: #fff5f7; 
-            border-color: #e94560;
+        .dropdown-item.danger:hover {
+            background: #fff5f7;
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 4px 0;
+        }
+        
+        .dropdown-icon {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
         }
         
         .field-label { 
@@ -273,8 +312,8 @@
         }
         
         .qr-section {
-            margin: 20px 0;
-            padding: 20px;
+            margin: 16px 0;
+            padding: 16px;
             background: #f5f5f5;
             border-radius: 8px;
         }
@@ -282,7 +321,7 @@
         .qr-label { 
             font-size: 12px; 
             color: #666666; 
-            margin-bottom: 16px; 
+            margin-bottom: 12px; 
             text-align: center; 
         }
         
@@ -305,28 +344,6 @@
             display: block; 
             width: 150px; 
             height: 150px; 
-        }
-        
-        .qr-actions { 
-            display: flex; 
-            gap: 8px; 
-            flex-direction: column; 
-            min-width: 180px; 
-        }
-        
-        .qr-actions button { 
-            width: 100%; 
-        }
-        
-        .btn-qr-download { 
-            background: #ffffff; 
-            color: #1a1a1a;
-            border: 1px solid #e0e0e0;
-        }
-        
-        .btn-qr-download:hover { 
-            background: #f5f5f5; 
-            border-color: #1a1a1a;
         }
         
         .edit-form {
@@ -424,20 +441,6 @@
             border-color: #e94560;
         }
         
-        .track-cover-thumb {
-            width: 60px;
-            height: 60px;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 12px;
-        }
-        
-        .track-cover-thumb img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
-        }
-        
         #loginForm {
             max-width: 400px;
             margin: 60px auto;
@@ -451,6 +454,21 @@
             margin-top: 0;
             margin-bottom: 24px;
             text-align: center;
+        }
+        
+        /* Оверлей для закрытия меню */
+        .menu-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 99;
+        }
+        
+        .menu-overlay.active {
+            display: block;
         }
     </style>
 </head>
@@ -478,17 +496,14 @@
             <h3>📊 Общая статистика</h3>
             <div class="stats-row">
                 <div class="stat-card">
-                    <div class="stat-icon">🎵</div>
                     <div class="stat-value" id="totalTracks">0</div>
                     <div class="stat-label">Всего треков</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">▶️</div>
                     <div class="stat-value" id="totalPlays">0</div>
                     <div class="stat-label">Всего прослушиваний</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">🔥</div>
                     <div class="stat-value" id="topTrack">—</div>
                     <div class="stat-label">Самый популярный</div>
                 </div>
@@ -506,7 +521,7 @@
         <div class="cover-upload">
             <label class="field-label">Обложка трека</label>
             <div class="cover-preview" id="coverPreview">
-                <div class="cover-preview-placeholder"><br>Загрузите обложку</div>
+                <div class="cover-preview-placeholder">📷<br>Загрузите обложку</div>
             </div>
             <input type="file" id="coverFile" accept="image/*" style="display: none;">
             <div class="cover-actions">
@@ -534,12 +549,16 @@
         <h2>Список треков</h2>
         <div id="tracksList"></div>
     </div>
+    
+    <!-- Оверлей для закрытия меню -->
+    <div class="menu-overlay" id="menuOverlay"></div>
 
     <script type="module">
         import { supabase } from './supabase-config.js';
 
         let selectedCoverFile = null;
         let selectedCoverUrl = null;
+        let currentMenuId = null;
 
         window.login = async () => {
             const email = document.getElementById('email').value;
@@ -622,7 +641,38 @@
             }
         }
 
+        // Закрыть все открытые меню
+        function closeAllMenus() {
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                menu.classList.remove('active');
+            });
+            document.getElementById('menuOverlay').classList.remove('active');
+            currentMenuId = null;
+        }
+
+        // Переключить меню
+        window.toggleMenu = (id) => {
+            const menu = document.getElementById('menu-' + id);
+            const overlay = document.getElementById('menuOverlay');
+            
+            if (currentMenuId === id) {
+                closeAllMenus();
+                return;
+            }
+            
+            closeAllMenus();
+            
+            menu.classList.add('active');
+            overlay.classList.add('active');
+            currentMenuId = id;
+        };
+
+        // Закрытие по клику на оверлей
+        document.getElementById('menuOverlay').addEventListener('click', closeAllMenus);
+
         async function loadTracks() {
+            closeAllMenus();
+            
             const { data: tracks, error } = await supabase
                 .from('tracks')
                 .select('*')
@@ -656,11 +706,41 @@
                     ? '<div class="track-cover-thumb"><img src="' + t.cover_url + '" alt="' + t.title + '"></div>'
                     : '';
                 
+                const statusText = t.active ? 'Отключить' : 'Включить';
+                const statusIcon = t.active ? '⏸' : '▶';
+                
                 return '<div class="track-item" id="track-' + t.id + '">' +
-                    coverHtml +
-                    '<div class="track-title">' + t.title + '</div>' +
-                    descriptionHtml +
-                    '<div class="track-meta">' + t.price + ' руб · ' + t.duration_days + ' дней · ' + duration + '</div>' +
+                    '<div class="track-header">' +
+                        '<div class="track-header-content">' +
+                            coverHtml +
+                            '<div class="track-title">' + t.title + '</div>' +
+                            descriptionHtml +
+                            '<div class="track-meta">' + t.price + ' руб · ' + t.duration_days + ' дней · ' + duration + '</div>' +
+                        '</div>' +
+                        '<button class="menu-button" onclick="toggleMenu(\'' + t.id + '\')">⋯</button>' +
+                    '</div>' +
+                    
+                    '<div class="dropdown-menu" id="menu-' + t.id + '">' +
+                        '<button class="dropdown-item" onclick="copyLink(\'' + trackLink + '\', \'' + t.title.replace(/'/g, "\\'") + '\')">' +
+                            '<span class="dropdown-icon"></span> Копировать ссылку' +
+                        '</button>' +
+                        '<button class="dropdown-item" onclick="downloadQR(\'' + qrUrl + '\', \'' + t.title.replace(/'/g, "\\'") + '\')">' +
+                            '<span class="dropdown-icon">📱</span> Скачать QR-код' +
+                        '</button>' +
+                        '<div class="dropdown-divider"></div>' +
+                        '<button class="dropdown-item" onclick="showEditForm(\'' + t.id + '\', \'' + t.title.replace(/'/g, "\\'") + '\', \'' + (t.description || '').replace(/'/g, "\\'") + '\', ' + t.price + ', ' + t.duration_days + ', \'' + (t.cover_url || '') + '\')">' +
+                            '<span class="dropdown-icon">✏️</span> Редактировать' +
+                        '</button>' +
+                        '<button class="dropdown-item" onclick="toggleTrack(\'' + t.id + '\', ' + !t.active + ')">' +
+                            '<span class="dropdown-icon">' + statusIcon + '</span> ' + statusText +
+                        '</button>' +
+                        '<div class="dropdown-divider"></div>' +
+                        '<button class="dropdown-item danger" onclick="deleteTrack(\'' + t.id + '\')">' +
+                            '<span class="dropdown-icon">🗑</span> Удалить' +
+                        '</button>' +
+                    '</div>' +
+                    
+                    '<div class="track-link">' + trackLink + '</div>' +
                     
                     '<div class="stats-row">' +
                         '<div class="stat-card">' +
@@ -671,35 +751,6 @@
                             '<div class="stat-value" style="font-size: 14px;">' + lastPlayed + '</div>' +
                             '<div class="stat-label">Последнее прослушивание</div>' +
                         '</div>' +
-                    '</div>' +
-                    
-                    '<div class="track-link">' + trackLink + '</div>' +
-                    
-                    '<div class="qr-section">' +
-                        '<div class="qr-label">QR-код для быстрого доступа</div>' +
-                        '<div class="qr-wrapper">' +
-                            '<div class="qr-code-container">' +
-                                '<img src="' + qrUrl + '" alt="QR-код" crossorigin="anonymous">' +
-                            '</div>' +
-                            '<div class="qr-actions">' +
-                                '<button class="btn-qr-download" onclick="downloadQR(\'' + qrUrl + '\', \'' + t.title.replace(/'/g, "\\'") + '\')">' +
-                                    'Скачать QR' +
-                                '</button>' +
-                                '<button class="btn-copy" onclick="copyLink(\'' + trackLink + '\', \'' + t.title.replace(/'/g, "\\'") + '\')">' +
-                                    'Копировать ссылку' +
-                                '</button>' +
-                            '</div>' +
-                        '</div>' +
-                    '</div>' +
-                    
-                    '<div class="track-actions">' +
-                        '<button class="btn-edit" onclick="showEditForm(\'' + t.id + '\', \'' + t.title.replace(/'/g, "\\'") + '\', \'' + (t.description || '').replace(/'/g, "\\'") + '\', ' + t.price + ', ' + t.duration_days + ', \'' + (t.cover_url || '') + '\')">' +
-                            'Редактировать' +
-                        '</button>' +
-                        '<button onclick="toggleTrack(\'' + t.id + '\', ' + !t.active + ')">' +
-                            (t.active ? 'Отключить' : 'Включить') +
-                        '</button>' +
-                        '<button class="btn-delete" onclick="deleteTrack(\'' + t.id + '\')">Удалить</button>' +
                     '</div>' +
                 '</div>';
             }).join('');
@@ -719,6 +770,8 @@
         }
 
         window.showEditForm = (id, title, description, price, days, coverUrl) => {
+            closeAllMenus();
+            
             const trackItem = document.getElementById('track-' + id);
             const existingForm = trackItem.querySelector('.edit-form');
             
@@ -861,6 +914,7 @@
         };
 
         window.copyLink = async (link, title) => {
+            closeAllMenus();
             try {
                 await navigator.clipboard.writeText(link);
                 
@@ -885,6 +939,7 @@
         };
 
         window.downloadQR = async (qrUrl, title) => {
+            closeAllMenus();
             try {
                 const response = await fetch(qrUrl);
                 const blob = await response.blob();
@@ -903,6 +958,7 @@
         };
 
         window.toggleTrack = async (id, active) => {
+            closeAllMenus();
             const { error } = await supabase
                 .from('tracks')
                 .update({ active })
@@ -916,6 +972,7 @@
         };
 
         window.deleteTrack = async (id) => {
+            closeAllMenus();
             if (!confirm('Удалить этот трек?')) return;
             
             const { error } = await supabase
@@ -1033,7 +1090,7 @@
                     .select();
 
                 if (dbError) {
-                    console.error(' Ошибка БД:', dbError);
+                    console.error('Ошибка БД:', dbError);
                     throw dbError;
                 }
 
