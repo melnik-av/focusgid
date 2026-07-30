@@ -17,19 +17,38 @@
             min-height: 100vh;
         }
         
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
         h1 { 
-            margin-top: 0; 
+            margin: 0;
             font-size: 32px;
             font-weight: 700;
             letter-spacing: -0.5px;
         }
         
-        h2 {
-            font-size: 24px;
-            font-weight: 600;
-            margin-top: 40px;
-            margin-bottom: 20px;
-            letter-spacing: -0.3px;
+        .add-track-btn {
+            background: #1a1a1a;
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: none;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: auto;
+            margin: 0;
+        }
+        
+        .add-track-btn:hover {
+            background: #333333;
         }
         
         input, textarea, button { 
@@ -219,7 +238,6 @@
             letter-spacing: 0.5px;
         }
         
-        /* Кнопка меню (три точки) */
         .menu-button {
             width: 36px;
             height: 36px;
@@ -243,7 +261,6 @@
             color: #1a1a1a;
         }
         
-        /* Выпадающее меню */
         .dropdown-menu {
             position: absolute;
             top: 60px;
@@ -309,41 +326,6 @@
             margin-bottom: 6px; 
             display: block;
             font-weight: 500;
-        }
-        
-        .qr-section {
-            margin: 16px 0;
-            padding: 16px;
-            background: #f5f5f5;
-            border-radius: 8px;
-        }
-        
-        .qr-label { 
-            font-size: 12px; 
-            color: #666666; 
-            margin-bottom: 12px; 
-            text-align: center; 
-        }
-        
-        .qr-wrapper { 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 20px; 
-            flex-wrap: wrap; 
-        }
-        
-        .qr-code-container { 
-            background: white; 
-            padding: 12px; 
-            border-radius: 8px; 
-            display: inline-block; 
-        }
-        
-        .qr-code-container img { 
-            display: block; 
-            width: 150px; 
-            height: 150px; 
         }
         
         .edit-form {
@@ -456,7 +438,6 @@
             text-align: center;
         }
         
-        /* Оверлей для закрытия меню */
         .menu-overlay {
             display: none;
             position: fixed;
@@ -470,11 +451,125 @@
         .menu-overlay.active {
             display: block;
         }
+        
+        /* Модальное окно добавления трека */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background: #ffffff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 24px 0 24px;
+        }
+        
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+        
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 20px;
+            color: #666666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+            transition: all 0.2s;
+        }
+        
+        .modal-close:hover {
+            background: #e0e0e0;
+            color: #1a1a1a;
+        }
+        
+        .modal-body {
+            padding: 24px;
+        }
+        
+        .modal-body input,
+        .modal-body textarea {
+            margin: 8px 0 16px 0;
+        }
+        
+        .modal-footer {
+            padding: 0 24px 24px 24px;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .modal-footer button {
+            flex: 1;
+        }
+        
+        .btn-cancel-modal {
+            background: #ffffff;
+            color: #1a1a1a;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .btn-cancel-modal:hover {
+            background: #f5f5f5;
+            border-color: #1a1a1a;
+        }
+        
+        .modal-status {
+            margin: 0 24px 16px 24px;
+            padding: 12px 16px;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            min-height: 20px;
+        }
+        
+        @media (max-width: 480px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .add-track-btn {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>Админ-панель</h1>
-    
     <div id="loginForm">
         <h2>Вход</h2>
         <input type="email" id="email" placeholder="Email">
@@ -490,6 +585,11 @@
                 <div class="user-email" id="userEmail">—</div>
             </div>
             <button class="logout-btn" onclick="logout()">Выйти</button>
+        </div>
+        
+        <div class="header">
+            <h1>Админ-панель</h1>
+            <button class="add-track-btn" onclick="openAddModal()">+ Добавить трек</button>
         </div>
         
         <div class="total-stats" id="totalStats">
@@ -510,48 +610,59 @@
             </div>
         </div>
         
-        <h2>Добавить трек</h2>
-        
-        <label class="field-label">Название трека *</label>
-        <input type="text" id="title" placeholder="Например: Прогулка по старому городу">
-        
-        <label class="field-label">Описание (аннотация)</label>
-        <textarea id="description" placeholder="2-3 предложения о прогулке..."></textarea>
-        
-        <div class="cover-upload">
-            <label class="field-label">Обложка трека</label>
-            <div class="cover-preview" id="coverPreview">
-                <div class="cover-preview-placeholder">📷<br>Загрузите обложку</div>
-            </div>
-            <input type="file" id="coverFile" accept="image/*" style="display: none;">
-            <div class="cover-actions">
-                <button onclick="document.getElementById('coverFile').click()">
-                    📷 Выбрать обложку
-                </button>
-                <button class="btn-remove-cover" onclick="removeCover()">
-                    🗑️ Удалить
-                </button>
-            </div>
-        </div>
-        
-        <label class="field-label">Цена (руб)</label>
-        <input type="number" id="price" placeholder="500" value="500">
-        
-        <label class="field-label">Дней доступа</label>
-        <input type="number" id="days" placeholder="7" value="7">
-        
-        <label class="field-label">Аудиофайл (MP3) *</label>
-        <input type="file" id="mp3file" accept="audio/mp3,audio/mpeg">
-        
-        <button onclick="uploadTrack()" id="uploadBtn">Загрузить трек</button>
-        <div id="status"></div>
-        
         <h2>Список треков</h2>
         <div id="tracksList"></div>
     </div>
     
-    <!-- Оверлей для закрытия меню -->
+    <!-- Оверлей для меню -->
     <div class="menu-overlay" id="menuOverlay"></div>
+    
+    <!-- Модальное окно добавления трека -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Добавить трек</h2>
+                <button class="modal-close" onclick="closeAddModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <label class="field-label">Название трека *</label>
+                <input type="text" id="title" placeholder="Например: Прогулка по старому городу">
+                
+                <label class="field-label">Описание (аннотация)</label>
+                <textarea id="description" placeholder="2-3 предложения о прогулке..."></textarea>
+                
+                <div class="cover-upload">
+                    <label class="field-label">Обложка трека</label>
+                    <div class="cover-preview" id="coverPreview">
+                        <div class="cover-preview-placeholder">📷<br>Загрузите обложку</div>
+                    </div>
+                    <input type="file" id="coverFile" accept="image/*" style="display: none;">
+                    <div class="cover-actions">
+                        <button onclick="document.getElementById('coverFile').click()">
+                             Выбрать обложку
+                        </button>
+                        <button class="btn-remove-cover" onclick="removeCover()">
+                            🗑 Удалить
+                        </button>
+                    </div>
+                </div>
+                
+                <label class="field-label">Цена (руб)</label>
+                <input type="number" id="price" placeholder="500" value="500">
+                
+                <label class="field-label">Дней доступа</label>
+                <input type="number" id="days" placeholder="7" value="7">
+                
+                <label class="field-label">Аудиофайл (MP3) *</label>
+                <input type="file" id="mp3file" accept="audio/mp3,audio/mpeg">
+            </div>
+            <div class="modal-status" id="modalStatus"></div>
+            <div class="modal-footer">
+                <button class="btn-cancel-modal" onclick="closeAddModal()">Отмена</button>
+                <button onclick="uploadTrack()" id="uploadBtn">Загрузить трек</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import { supabase } from './supabase-config.js';
@@ -588,6 +699,46 @@
             } else {
                 document.getElementById('loginForm').classList.remove('hidden');
                 document.getElementById('adminPanel').classList.add('hidden');
+            }
+        });
+
+        // Модалка добавления трека
+        window.openAddModal = () => {
+            document.getElementById('addModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closeAddModal = () => {
+            document.getElementById('addModal').classList.remove('active');
+            document.body.style.overflow = '';
+            
+            // Очищаем форму
+            document.getElementById('title').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('price').value = '500';
+            document.getElementById('days').value = '7';
+            document.getElementById('mp3file').value = '';
+            removeCover();
+            
+            const status = document.getElementById('modalStatus');
+            status.textContent = '';
+            status.style.borderColor = '#e0e0e0';
+        };
+
+        // Закрытие модалки по клику на оверлей
+        document.getElementById('addModal').addEventListener('click', (e) => {
+            if (e.target.id === 'addModal') {
+                closeAddModal();
+            }
+        });
+
+        // Закрытие по Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (document.getElementById('addModal').classList.contains('active')) {
+                    closeAddModal();
+                }
+                closeAllMenus();
             }
         });
 
@@ -641,7 +792,6 @@
             }
         }
 
-        // Закрыть все открытые меню
         function closeAllMenus() {
             document.querySelectorAll('.dropdown-menu').forEach(menu => {
                 menu.classList.remove('active');
@@ -650,7 +800,6 @@
             currentMenuId = null;
         }
 
-        // Переключить меню
         window.toggleMenu = (id) => {
             const menu = document.getElementById('menu-' + id);
             const overlay = document.getElementById('menuOverlay');
@@ -667,7 +816,6 @@
             currentMenuId = id;
         };
 
-        // Закрытие по клику на оверлей
         document.getElementById('menuOverlay').addEventListener('click', closeAllMenus);
 
         async function loadTracks() {
@@ -988,7 +1136,7 @@
         };
 
         window.uploadTrack = async () => {
-            const status = document.getElementById('status');
+            const status = document.getElementById('modalStatus');
             const uploadBtn = document.getElementById('uploadBtn');
             const title = document.getElementById('title').value.trim();
             const description = document.getElementById('description').value.trim();
@@ -1099,19 +1247,11 @@
                 status.textContent = '✅ Трек добавлен!';
                 status.style.borderColor = '#4CAF50';
                 
-                document.getElementById('title').value = '';
-                document.getElementById('description').value = '';
-                document.getElementById('price').value = '500';
-                document.getElementById('days').value = '7';
-                document.getElementById('mp3file').value = '';
-                removeCover();
-                
                 setTimeout(() => {
-                    status.textContent = '';
-                    status.style.borderColor = '#e0e0e0';
-                }, 3000);
+                    closeAddModal();
+                    loadTracks();
+                }, 1500);
                 
-                loadTracks();
             } catch (e) {
                 console.error('💥 Критическая ошибка:', e);
                 status.textContent = '❌ Ошибка: ' + e.message;
