@@ -709,6 +709,16 @@
         };
 
         window.closeAddModal = () => {
+            const title = document.getElementById('title').value.trim();
+            const file = document.getElementById('mp3file').files[0];
+            
+            // Предупреждение если есть несохраненные данные
+            if (title || file) {
+                if (!confirm('Форма не заполнена. Закрыть без сохранения?')) {
+                    return;
+                }
+            }
+            
             document.getElementById('addModal').classList.remove('active');
             document.body.style.overflow = '';
             
@@ -725,19 +735,9 @@
             status.style.borderColor = '#e0e0e0';
         };
 
-        // Закрытие модалки по клику на оверлей
-        document.getElementById('addModal').addEventListener('click', (e) => {
-            if (e.target.id === 'addModal') {
-                closeAddModal();
-            }
-        });
-
-        // Закрытие по Escape
+        // Закрытие по Escape (только меню, не модалку)
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                if (document.getElementById('addModal').classList.contains('active')) {
-                    closeAddModal();
-                }
                 closeAllMenus();
             }
         });
@@ -873,7 +873,7 @@
                             '<span class="dropdown-icon"></span> Копировать ссылку' +
                         '</button>' +
                         '<button class="dropdown-item" onclick="downloadQR(\'' + qrUrl + '\', \'' + t.title.replace(/'/g, "\\'") + '\')">' +
-                            '<span class="dropdown-icon">📱</span> Скачать QR-код' +
+                            '<span class="dropdown-icon"></span> Скачать QR-код' +
                         '</button>' +
                         '<div class="dropdown-divider"></div>' +
                         '<button class="dropdown-item" onclick="showEditForm(\'' + t.id + '\', \'' + t.title.replace(/'/g, "\\'") + '\', \'' + (t.description || '').replace(/'/g, "\\'") + '\', ' + t.price + ', ' + t.duration_days + ', \'' + (t.cover_url || '') + '\')">' +
@@ -1150,7 +1150,7 @@
             }
 
             const { data: { user } } = await supabase.auth.getUser();
-            console.log('👤 Пользователь:', user?.email);
+            console.log(' Пользователь:', user?.email);
             
             if (!user) {
                 alert('Вы не авторизованы. Войдите в систему.');
@@ -1201,7 +1201,7 @@
                         });
                     
                     if (coverUploadError) {
-                        console.error('❌ Ошибка загрузки обложки:', coverUploadError);
+                        console.error(' Ошибка загрузки обложки:', coverUploadError);
                         throw coverUploadError;
                     }
                     
