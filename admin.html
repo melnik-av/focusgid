@@ -6,188 +6,469 @@
     <title>Админ-панель</title>
     <style>
         * { box-sizing: border-box; }
+        
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             max-width: 800px; 
             margin: 0 auto; 
-            padding: 20px; 
-            background: #1a1a2e; 
-            color: white; 
+            padding: 40px 20px; 
+            background: #fafafa; 
+            color: #1a1a1a; 
             min-height: 100vh;
         }
-        h1 { margin-top: 0; }
+        
+        h1 { 
+            margin-top: 0; 
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        h2 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            letter-spacing: -0.3px;
+        }
+        
         input, textarea, button { 
-            padding: 12px; 
+            padding: 14px 16px; 
             margin: 8px 0; 
             width: 100%; 
             box-sizing: border-box; 
             border-radius: 8px; 
-            border: none; 
-            font-size: 16px;
+            border: 1px solid #e0e0e0; 
+            font-size: 15px;
             font-family: inherit;
+            transition: all 0.2s;
         }
+        
         input, textarea { 
-            background: rgba(255,255,255,0.1); 
-            color: white; 
+            background: #ffffff; 
+            color: #1a1a1a; 
         }
-        input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.5); }
-        textarea { resize: vertical; min-height: 80px; }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #1a1a1a;
+        }
+        
+        input::placeholder, textarea::placeholder { 
+            color: #999999; 
+        }
+        
+        textarea { 
+            resize: vertical; 
+            min-height: 80px; 
+        }
+        
         button { 
-            background: #e94560; 
-            color: white; 
+            background: #1a1a1a; 
+            color: #ffffff; 
             cursor: pointer; 
-            font-weight: 600; 
-            transition: background 0.2s;
+            font-weight: 500; 
+            border: none;
         }
-        button:hover { background: #d63851; }
-        button:disabled { background: #4a4a5a; cursor: not-allowed; }
+        
+        button:hover { 
+            background: #333333; 
+        }
+        
+        button:disabled { 
+            background: #cccccc; 
+            cursor: not-allowed; 
+        }
+        
         #status { 
             margin-top: 20px; 
-            padding: 15px; 
-            background: rgba(255,255,255,0.1); 
+            padding: 16px; 
+            background: #ffffff; 
+            border: 1px solid #e0e0e0;
             border-radius: 8px; 
             min-height: 20px; 
+            font-size: 14px;
         }
+        
         .hidden { display: none !important; }
+        
         .user-info {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px;
-            background: rgba(255,255,255,0.05);
+            padding: 16px 20px;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
-        .user-email { font-size: 14px; color: #a0a0b0; }
-        .logout-btn { background: #666; width: auto; padding: 8px 16px; font-size: 14px; margin: 0; }
-        .logout-btn:hover { background: #555; }
+        
+        .user-email { 
+            font-size: 14px; 
+            color: #666666; 
+            margin-top: 4px;
+        }
+        
+        .logout-btn { 
+            background: #ffffff; 
+            color: #1a1a1a;
+            border: 1px solid #e0e0e0;
+            width: auto; 
+            padding: 8px 16px; 
+            font-size: 14px; 
+            margin: 0; 
+        }
+        
+        .logout-btn:hover { 
+            background: #f5f5f5; 
+            border-color: #1a1a1a;
+        }
+        
         .track-item {
-            padding: 20px; 
-            background: rgba(255,255,255,0.05); 
-            margin: 15px 0; 
+            padding: 24px; 
+            background: #ffffff; 
+            margin: 16px 0; 
             border-radius: 12px;
+            border: 1px solid #e0e0e0;
         }
-        .track-title { font-weight: 600; font-size: 18px; margin-bottom: 8px; }
-        .track-description { font-size: 14px; color: #a0a0b0; margin-bottom: 8px; font-style: italic; line-height: 1.5; }
-        .track-meta { font-size: 14px; color: #6c6c7d; margin-bottom: 8px; }
-        .track-link { font-size: 12px; color: #6c6c7d; word-break: break-all; font-family: monospace; margin-bottom: 15px; }
+        
+        .track-title { 
+            font-weight: 600; 
+            font-size: 18px; 
+            margin-bottom: 8px; 
+        }
+        
+        .track-description { 
+            font-size: 14px; 
+            color: #666666; 
+            margin-bottom: 8px; 
+            line-height: 1.5; 
+        }
+        
+        .track-meta { 
+            font-size: 13px; 
+            color: #999999;
+            margin-bottom: 16px;
+        }
+        
+        .track-link { 
+            font-size: 12px; 
+            color: #999999; 
+            word-break: break-all;
+            font-family: 'SF Mono', Monaco, monospace;
+            margin-bottom: 20px;
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border-radius: 6px;
+        }
         
         .stats-row {
             display: flex;
-            gap: 15px;
-            margin: 15px 0;
+            gap: 12px;
+            margin: 16px 0;
             flex-wrap: wrap;
         }
+        
         .stat-card {
             flex: 1;
             min-width: 120px;
-            background: rgba(255,255,255,0.08);
-            padding: 15px;
-            border-radius: 10px;
+            background: #f5f5f5;
+            padding: 16px;
+            border-radius: 8px;
             text-align: center;
-            border: 1px solid rgba(255,255,255,0.1);
         }
-        .stat-value { font-size: 28px; font-weight: 700; color: #e94560; margin-bottom: 5px; }
-        .stat-label { font-size: 12px; color: #a0a0b0; text-transform: uppercase; letter-spacing: 0.5px; }
-        .stat-icon { font-size: 20px; margin-bottom: 5px; }
         
-        .track-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
-        .track-actions button { flex: 1; min-width: 120px; }
-        .btn-copy { background: #4CAF50; }
-        .btn-copy:hover { background: #45a049; }
-        .btn-edit { background: #FF9800; }
-        .btn-edit:hover { background: #F57C00; }
-        .btn-save { background: #2196F3; }
-        .btn-save:hover { background: #1976D2; }
-        .btn-cancel { background: #757575; }
-        .btn-cancel:hover { background: #616161; }
-        .btn-delete { background: #8b0000; }
-        .btn-delete:hover { background: #a00000; }
-        .field-label { font-size: 14px; color: #a0a0b0; margin-bottom: 5px; display: block; }
+        .stat-value { 
+            font-size: 24px; 
+            font-weight: 700; 
+            color: #1a1a1a; 
+            margin-bottom: 4px; 
+        }
+        
+        .stat-label { 
+            font-size: 11px; 
+            color: #999999; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-icon { 
+            font-size: 18px; 
+            margin-bottom: 8px; 
+        }
+        
+        .track-actions { 
+            display: flex; 
+            gap: 8px; 
+            flex-wrap: wrap; 
+            margin-top: 20px; 
+        }
+        
+        .track-actions button { 
+            flex: 1; 
+            min-width: 120px;
+            padding: 12px 16px;
+            font-size: 14px;
+        }
+        
+        .btn-edit { 
+            background: #ffffff; 
+            color: #1a1a1a;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .btn-edit:hover { 
+            background: #f5f5f5; 
+            border-color: #1a1a1a;
+        }
+        
+        .btn-copy { 
+            background: #ffffff; 
+            color: #1a1a1a;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .btn-copy:hover { 
+            background: #f5f5f5; 
+            border-color: #1a1a1a;
+        }
+        
+        .btn-save { 
+            background: #1a1a1a; 
+            color: #ffffff;
+        }
+        
+        .btn-save:hover { 
+            background: #333333; 
+        }
+        
+        .btn-cancel { 
+            background: #ffffff; 
+            color: #1a1a1a;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .btn-cancel:hover { 
+            background: #f5f5f5; 
+            border-color: #1a1a1a;
+        }
+        
+        .btn-delete { 
+            background: #ffffff; 
+            color: #e94560;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .btn-delete:hover { 
+            background: #fff5f7; 
+            border-color: #e94560;
+        }
+        
+        .field-label { 
+            font-size: 13px; 
+            color: #666666; 
+            margin-bottom: 6px; 
+            display: block;
+            font-weight: 500;
+        }
         
         .qr-section {
             margin: 20px 0;
             padding: 20px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
+            background: #f5f5f5;
+            border-radius: 8px;
         }
-        .qr-label { font-size: 13px; color: #a0a0b0; margin-bottom: 15px; text-align: center; }
-        .qr-wrapper { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; }
-        .qr-code-container { background: white; padding: 15px; border-radius: 12px; display: inline-block; }
-        .qr-code-container img { display: block; width: 150px; height: 150px; }
-        .qr-actions { display: flex; gap: 10px; flex-direction: column; min-width: 180px; }
-        .qr-actions button { width: 100%; }
-        .btn-qr-download { background: #2196F3; }
-        .btn-qr-download:hover { background: #1976D2; }
+        
+        .qr-label { 
+            font-size: 12px; 
+            color: #666666; 
+            margin-bottom: 16px; 
+            text-align: center; 
+        }
+        
+        .qr-wrapper { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 20px; 
+            flex-wrap: wrap; 
+        }
+        
+        .qr-code-container { 
+            background: white; 
+            padding: 12px; 
+            border-radius: 8px; 
+            display: inline-block; 
+        }
+        
+        .qr-code-container img { 
+            display: block; 
+            width: 150px; 
+            height: 150px; 
+        }
+        
+        .qr-actions { 
+            display: flex; 
+            gap: 8px; 
+            flex-direction: column; 
+            min-width: 180px; 
+        }
+        
+        .qr-actions button { 
+            width: 100%; 
+        }
+        
+        .btn-qr-download { 
+            background: #ffffff; 
+            color: #1a1a1a;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .btn-qr-download:hover { 
+            background: #f5f5f5; 
+            border-color: #1a1a1a;
+        }
         
         .edit-form {
-            background: rgba(255,255,255,0.08);
-            padding: 20px;
+            background: #f5f5f5;
+            padding: 24px;
             border-radius: 12px;
-            margin: 15px 0;
-            border: 1px solid rgba(255,255,255,0.1);
+            margin: 20px 0;
         }
-        .edit-form input, .edit-form textarea { background: rgba(255,255,255,0.15); margin-bottom: 12px; }
-        .edit-form .field-label { color: #d0d0e0; font-weight: 600; }
-        .edit-actions { display: flex; gap: 10px; margin-top: 15px; }
-        .edit-actions button { flex: 1; }
+        
+        .edit-form input, .edit-form textarea { 
+            background: #ffffff; 
+            margin-bottom: 12px; 
+        }
+        
+        .edit-form .field-label { 
+            color: #1a1a1a; 
+            font-weight: 600; 
+        }
+        
+        .edit-actions { 
+            display: flex; 
+            gap: 8px; 
+            margin-top: 20px; 
+        }
+        
+        .edit-actions button { 
+            flex: 1; 
+        }
         
         .total-stats {
-            background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(22, 33, 62, 0.5));
-            padding: 25px;
-            border-radius: 16px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(233, 69, 96, 0.3);
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
         }
-        .total-stats h3 { margin: 0 0 15px 0; font-size: 18px; }
-        .total-stats .stats-row { margin: 0; }
         
-        .cover-upload { margin: 15px 0; }
+        .total-stats h3 { 
+            margin: 0 0 20px 0; 
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .total-stats .stats-row { 
+            margin: 0; 
+        }
+        
+        .cover-upload { 
+            margin: 16px 0; 
+        }
+        
         .cover-preview {
             width: 150px;
             height: 150px;
-            border-radius: 12px;
+            border-radius: 8px;
             overflow: hidden;
-            background: rgba(255,255,255,0.1);
+            background: #f5f5f5;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 10px 0;
-            border: 2px dashed rgba(255,255,255,0.3);
+            border: 2px dashed #e0e0e0;
         }
-        .cover-preview img { width: 100%; height: 100%; object-fit: cover; }
-        .cover-preview-placeholder { color: #a0a0b0; font-size: 14px; text-align: center; padding: 20px; }
-        .cover-actions { display: flex; gap: 10px; }
-        .cover-actions button { flex: 1; }
-        .btn-remove-cover { background: #8b0000; }
-        .btn-remove-cover:hover { background: #a00000; }
+        
+        .cover-preview img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+        }
+        
+        .cover-preview-placeholder { 
+            color: #999999; 
+            font-size: 13px; 
+            text-align: center; 
+            padding: 20px; 
+        }
+        
+        .cover-actions { 
+            display: flex; 
+            gap: 8px; 
+        }
+        
+        .cover-actions button { 
+            flex: 1; 
+        }
+        
+        .btn-remove-cover { 
+            background: #ffffff; 
+            color: #e94560;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .btn-remove-cover:hover { 
+            background: #fff5f7; 
+            border-color: #e94560;
+        }
         
         .track-cover-thumb {
             width: 60px;
             height: 60px;
             border-radius: 8px;
             overflow: hidden;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
-        .track-cover-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .track-cover-thumb img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+        }
+        
+        #loginForm {
+            max-width: 400px;
+            margin: 60px auto;
+            padding: 40px;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        #loginForm h2 {
+            margin-top: 0;
+            margin-bottom: 24px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
-    <h1>🎛️ Админ-панель</h1>
+    <h1>Админ-панель</h1>
     
     <div id="loginForm">
         <h2>Вход</h2>
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Пароль">
         <button onclick="login()">Войти</button>
-        <div id="loginError" style="color: #e94560; margin-top: 10px;"></div>
+        <div id="loginError" style="color: #e94560; margin-top: 10px; font-size: 14px;"></div>
     </div>
     
     <div id="adminPanel" class="hidden">
         <div class="user-info">
             <div>
-                <div style="font-weight: 600;">Вы вошли как:</div>
+                <div style="font-weight: 600; font-size: 14px;">Вы вошли как:</div>
                 <div class="user-email" id="userEmail">—</div>
             </div>
             <button class="logout-btn" onclick="logout()">Выйти</button>
@@ -225,11 +506,11 @@
         <div class="cover-upload">
             <label class="field-label">Обложка трека</label>
             <div class="cover-preview" id="coverPreview">
-                <div class="cover-preview-placeholder">📷<br>Загрузите обложку</div>
+                <div class="cover-preview-placeholder"><br>Загрузите обложку</div>
             </div>
             <input type="file" id="coverFile" accept="image/*" style="display: none;">
             <div class="cover-actions">
-                <button onclick="document.getElementById('coverFile').click()" style="background: #2196F3;">
+                <button onclick="document.getElementById('coverFile').click()">
                     📷 Выбрать обложку
                 </button>
                 <button class="btn-remove-cover" onclick="removeCover()">
@@ -250,7 +531,7 @@
         <button onclick="uploadTrack()" id="uploadBtn">Загрузить трек</button>
         <div id="status"></div>
         
-        <h2 style="margin-top: 40px;">Список треков</h2>
+        <h2>Список треков</h2>
         <div id="tracksList"></div>
     </div>
 
@@ -310,7 +591,7 @@
             selectedCoverUrl = null;
             document.getElementById('coverFile').value = '';
             document.getElementById('coverPreview').innerHTML = 
-                '<div class="cover-preview-placeholder"><br>Загрузите обложку</div>';
+                '<div class="cover-preview-placeholder">📷<br>Загрузите обложку</div>';
         };
 
         function getQRUrl(text, size = 200) {
@@ -356,7 +637,7 @@
             
             const list = document.getElementById('tracksList');
             if (!tracks || tracks.length === 0) {
-                list.innerHTML = '<div style="color: #a0a0b0;">Нет треков</div>';
+                list.innerHTML = '<div style="color: #999999; text-align: center; padding: 40px;">Нет треков</div>';
                 return;
             }
             
@@ -365,7 +646,7 @@
             list.innerHTML = tracks.map(t => {
                 const trackLink = playerUrl + '?track=' + t.id;
                 const descriptionHtml = t.description 
-                    ? '<div class="track-description">"' + t.description + '"</div>' 
+                    ? '<div class="track-description">' + t.description + '</div>' 
                     : '';
                 const qrUrl = getQRUrl(trackLink, 200);
                 const playCount = t.play_count || 0;
@@ -379,16 +660,14 @@
                     coverHtml +
                     '<div class="track-title">' + t.title + '</div>' +
                     descriptionHtml +
-                    '<div class="track-meta">' + t.price + ' руб, ' + t.duration_days + ' дней, ' + duration + '</div>' +
+                    '<div class="track-meta">' + t.price + ' руб · ' + t.duration_days + ' дней · ' + duration + '</div>' +
                     
                     '<div class="stats-row">' +
                         '<div class="stat-card">' +
-                            '<div class="stat-icon">▶️</div>' +
                             '<div class="stat-value">' + playCount + '</div>' +
                             '<div class="stat-label">Прослушиваний</div>' +
                         '</div>' +
                         '<div class="stat-card">' +
-                            '<div class="stat-icon">🕐</div>' +
                             '<div class="stat-value" style="font-size: 14px;">' + lastPlayed + '</div>' +
                             '<div class="stat-label">Последнее прослушивание</div>' +
                         '</div>' +
@@ -397,17 +676,17 @@
                     '<div class="track-link">' + trackLink + '</div>' +
                     
                     '<div class="qr-section">' +
-                        '<div class="qr-label"> QR-код для быстрого доступа</div>' +
+                        '<div class="qr-label">QR-код для быстрого доступа</div>' +
                         '<div class="qr-wrapper">' +
                             '<div class="qr-code-container">' +
                                 '<img src="' + qrUrl + '" alt="QR-код" crossorigin="anonymous">' +
                             '</div>' +
                             '<div class="qr-actions">' +
                                 '<button class="btn-qr-download" onclick="downloadQR(\'' + qrUrl + '\', \'' + t.title.replace(/'/g, "\\'") + '\')">' +
-                                    ' Скачать QR' +
+                                    'Скачать QR' +
                                 '</button>' +
                                 '<button class="btn-copy" onclick="copyLink(\'' + trackLink + '\', \'' + t.title.replace(/'/g, "\\'") + '\')">' +
-                                    ' Копировать ссылку' +
+                                    'Копировать ссылку' +
                                 '</button>' +
                             '</div>' +
                         '</div>' +
@@ -415,7 +694,7 @@
                     
                     '<div class="track-actions">' +
                         '<button class="btn-edit" onclick="showEditForm(\'' + t.id + '\', \'' + t.title.replace(/'/g, "\\'") + '\', \'' + (t.description || '').replace(/'/g, "\\'") + '\', ' + t.price + ', ' + t.duration_days + ', \'' + (t.cover_url || '') + '\')">' +
-                            '✏️ Редактировать' +
+                            'Редактировать' +
                         '</button>' +
                         '<button onclick="toggleTrack(\'' + t.id + '\', ' + !t.active + ')">' +
                             (t.active ? 'Отключить' : 'Включить') +
@@ -450,7 +729,7 @@
             
             const coverPreviewHtml = coverUrl 
                 ? '<img src="' + coverUrl + '" alt="Обложка" style="width: 100%; height: 100%; object-fit: cover;">'
-                : '<div class="cover-preview-placeholder"><br>Нет обложки</div>';
+                : '<div class="cover-preview-placeholder">📷<br>Нет обложки</div>';
             
             const form = document.createElement('div');
             form.className = 'edit-form';
@@ -467,11 +746,11 @@
                 '</div>' +
                 '<input type="file" id="edit-cover-file-' + id + '" accept="image/*" style="display: none;">' +
                 '<div class="cover-actions">' +
-                    '<button onclick="document.getElementById(\'edit-cover-file-' + id + '\').click()" style="background: #2196F3;">' +
-                        '📷 Изменить обложку' +
+                    '<button onclick="document.getElementById(\'edit-cover-file-' + id + '\').click()">' +
+                        'Изменить обложку' +
                     '</button>' +
                     '<button class="btn-remove-cover" onclick="removeEditCover(\'' + id + '\')">' +
-                        '🗑️ Удалить' +
+                        'Удалить' +
                     '</button>' +
                 '</div>' +
                 
@@ -482,7 +761,7 @@
                 '<input type="number" id="edit-days-' + id + '" value="' + days + '">' +
                 
                 '<div class="edit-actions">' +
-                    '<button class="btn-save" onclick="saveTrack(\'' + id + '\', \'' + coverUrl + '\')">💾 Сохранить</button>' +
+                    '<button class="btn-save" onclick="saveTrack(\'' + id + '\', \'' + coverUrl + '\')">Сохранить</button>' +
                     '<button class="btn-cancel" onclick="loadTracks()">Отмена</button>' +
                 '</div>';
             
@@ -504,7 +783,7 @@
 
         window.removeEditCover = (id) => {
             document.getElementById('edit-cover-preview-' + id).innerHTML = 
-                '<div class="cover-preview-placeholder">📷<br>Нет обложки</div>';
+                '<div class="cover-preview-placeholder"><br>Нет обложки</div>';
             document.getElementById('edit-cover-file-' + id).value = '';
             delete document.getElementById('edit-cover-file-' + id).dataset.newCover;
         };
@@ -521,7 +800,7 @@
             }
             
             const status = document.getElementById('status');
-            status.textContent = ' Сохранение...';
+            status.textContent = 'Сохранение...';
             
             try {
                 let coverUrl = oldCoverUrl;
@@ -530,7 +809,7 @@
                 const newCoverData = coverFileInput.dataset.newCover;
                 
                 if (newCoverData) {
-                    status.textContent = '📤 Загрузка обложки...';
+                    status.textContent = 'Загрузка обложки...';
                     
                     const response = await fetch(newCoverData);
                     const blob = await response.blob();
@@ -566,16 +845,17 @@
                 if (error) throw error;
                 
                 status.textContent = '✅ Изменения сохранены!';
-                status.style.background = 'rgba(76, 175, 80, 0.2)';
+                status.style.borderColor = '#4CAF50';
                 
                 setTimeout(() => {
                     status.textContent = '';
-                    status.style.background = 'rgba(255,255,255,0.1)';
+                    status.style.borderColor = '#e0e0e0';
                 }, 3000);
                 
                 loadTracks();
             } catch (e) {
                 status.textContent = '❌ Ошибка: ' + e.message;
+                status.style.borderColor = '#e94560';
                 console.error('Ошибка сохранения:', e);
             }
         };
@@ -585,12 +865,12 @@
                 await navigator.clipboard.writeText(link);
                 
                 const status = document.getElementById('status');
-                status.textContent = '✅ Ссылка на "' + title + '" скопирована!';
-                status.style.background = 'rgba(76, 175, 80, 0.2)';
+                status.textContent = '✅ Ссылка скопирована!';
+                status.style.borderColor = '#4CAF50';
                 
                 setTimeout(() => {
                     status.textContent = '';
-                    status.style.background = 'rgba(255,255,255,0.1)';
+                    status.style.borderColor = '#e0e0e0';
                 }, 3000);
             } catch (err) {
                 const textArea = document.createElement('textarea');
@@ -672,13 +952,13 @@
                 return;
             }
 
-            status.textContent = '⏳ Загрузка аудио...';
+            status.textContent = 'Загрузка аудио...';
             uploadBtn.disabled = true;
 
             try {
                 const audioFileName = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
                 
-                console.log(' Загрузка аудио:', audioFileName);
+                console.log('Загрузка аудио:', audioFileName);
                 
                 const { error: audioUploadError } = await supabase.storage
                     .from('tracks')
@@ -698,15 +978,14 @@
 
                 console.log('✅ Аудио загружено:', audioUrl);
 
-                status.textContent = '⏱️ Определение длительности...';
-                console.log(' Определение длительности...');
+                status.textContent = 'Определение длительности...';
                 
                 const duration = await getAudioDuration(audioUrl);
                 console.log('✅ Длительность:', duration, 'сек');
 
                 let coverUrl = null;
                 if (selectedCoverFile) {
-                    status.textContent = '📤 Загрузка обложки...';
+                    status.textContent = 'Загрузка обложки...';
                     
                     const coverFileName = 'cover_' + Date.now() + '.jpg';
                     const { error: coverUploadError } = await supabase.storage
@@ -729,7 +1008,7 @@
                     console.log('✅ Обложка загружена:', coverUrl);
                 }
 
-                status.textContent = '💾 Создание записи в базе...';
+                status.textContent = 'Создание записи в базе...';
                 
                 const trackData = {
                     title,
@@ -746,7 +1025,7 @@
                     trackData.cover_url = coverUrl;
                 }
                 
-                console.log('📝 Данные для вставки:', trackData);
+                console.log('Данные для вставки:', trackData);
                 
                 const { error: dbError, data: dbData } = await supabase
                     .from('tracks')
@@ -754,17 +1033,14 @@
                     .select();
 
                 if (dbError) {
-                    console.error('❌ Ошибка БД:', dbError);
-                    console.error('Код:', dbError.code);
-                    console.error('Сообщение:', dbError.message);
-                    console.error('Детали:', dbError.details);
+                    console.error(' Ошибка БД:', dbError);
                     throw dbError;
                 }
 
                 console.log('✅ Запись создана:', dbData);
                 
                 status.textContent = '✅ Трек добавлен!';
-                status.style.background = 'rgba(76, 175, 80, 0.2)';
+                status.style.borderColor = '#4CAF50';
                 
                 document.getElementById('title').value = '';
                 document.getElementById('description').value = '';
@@ -775,14 +1051,14 @@
                 
                 setTimeout(() => {
                     status.textContent = '';
-                    status.style.background = 'rgba(255,255,255,0.1)';
+                    status.style.borderColor = '#e0e0e0';
                 }, 3000);
                 
                 loadTracks();
             } catch (e) {
                 console.error('💥 Критическая ошибка:', e);
                 status.textContent = '❌ Ошибка: ' + e.message;
-                status.style.background = 'rgba(233, 69, 96, 0.2)';
+                status.style.borderColor = '#e94560';
             } finally {
                 uploadBtn.disabled = false;
             }
