@@ -80,7 +80,6 @@
             font-size: 32px;
         }
         
-        /* Оверлей с иконкой play */
         .walk-cover-overlay {
             position: absolute;
             top: 0;
@@ -101,10 +100,46 @@
         
         .walk-cover.playing .walk-cover-overlay {
             opacity: 1;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.5);
+        }
+        
+        .play-button-wrapper {
+            position: relative;
+            width: 44px;
+            height: 44px;
+        }
+        
+        .play-button-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 44px;
+            height: 44px;
+            transform: rotate(-90deg);
+        }
+        
+        .play-button-bg circle {
+            fill: none;
+            stroke-width: 3;
+        }
+        
+        .play-button-bg .bg-circle {
+            stroke: rgba(255, 255, 255, 0.2);
+        }
+        
+        .play-button-bg .progress-circle {
+            stroke: #ffffff;
+            stroke-linecap: round;
+            stroke-dasharray: 125.66;
+            stroke-dashoffset: 125.66;
+            transition: stroke-dashoffset 0.1s linear;
         }
         
         .play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             width: 36px;
             height: 36px;
             background: rgba(255, 255, 255, 0.95);
@@ -114,11 +149,7 @@
             justify-content: center;
             font-size: 14px;
             color: #1a1a1a;
-            transition: transform 0.2s;
-        }
-        
-        .walk-cover:hover .play-icon {
-            transform: scale(1.1);
+            z-index: 2;
         }
         
         .walk-info {
@@ -190,6 +221,10 @@
             h1 { font-size: 26px; }
             .walk-cover { width: 80px; height: 80px; }
             .walk-title { font-size: 16px; }
+            .play-button-wrapper { width: 36px; height: 36px; }
+            .play-button-bg { width: 36px; height: 36px; }
+            .play-button-bg circle { stroke-width: 2.5; }
+            .play-button-bg .progress-circle { stroke-dasharray: 100.53; stroke-dashoffset: 100.53; }
             .play-icon { width: 30px; height: 30px; font-size: 12px; }
         }
     </style>
@@ -207,7 +242,9 @@
         
         let currentAudio = null;
         let currentPreviewId = null;
-        let previewTimeout = null;
+        let previewStartTime = null;
+        let previewAnimationFrame = null;
+        const PREVIEW_DURATION = 30000; // 30 секунд
         
         async function loadWalks() {
             const container = document.getElementById('walksList');
@@ -247,11 +284,19 @@
                         ? '<div class="walk-description">' + walk.description + '</div>'
                         : '';
                     
+                    const circumference = window.innerWidth <= 480 ? 100.53 : 125.66;
+                    
                     return '<div class="walk-item">' +
                         '<div class="walk-cover" id="cover-' + walk.id + '" onclick="togglePreview(\'' + walk.id + '\', \'' + walk.file_url.replace(/'/g, "\\'") + '\')">' +
                             coverHtml +
                             '<div class="walk-cover-overlay">' +
-                                '<div class="play-icon" id="play-icon-' + walk.id + '">▶</div>' +
+                                '<div class="play-button-wrapper">' +
+                                    '<svg class="play-button-bg" viewBox="0 0 44 44">' +
+                                        '<circle class="bg-circle" cx="22" cy="22" r="20"></circle>' +
+                                        '<circle class="progress-circle" id="progress-' + walk.id + '" cx="22" cy="22" r="20"></circle>' +
+                                    '</svg>' +
+                                    '<div class="play-icon" id="play-icon-' + walk.id + '">▶</div>' +
+                                '</div>' +
                             '</div>' +
                         '</div>' +
                         '<div class="walk-info" onclick="openWalk(\'' + walk.id + '\')">' +
@@ -284,10 +329,23 @@
             }
         }
         
-        window.togglePreview = async (id, audioUrl) => {
-            const cover = document.getElementById('cover-' + id);
-            const playIcon = document.getElementById('play-icon-' + id);
+        function updateProgress(id) {
+            const progressCircle = document.getElementById('progress-' + id);
+            if (!progressCircle) return;
             
+            const elapsed = Date.now() - previewStartTime;
+            const progress = Math.min(elapsed / PREVIEW_DURATION, 1);
+            const circumference = window.innerWidth <= 480 ? 100.53 : 125.66;
+            const offset = circumference * (1 - progress);
+            
+            progressCircle.style.strokeDashoffset = offset;
+            
+            if (progress < 1 && currentPreviewId === id) {
+                previewAnimationFrame = requestAnimationFrame(() => updateProgress(id));
+            }
+        }
+        
+        window.togglePreview = async (id, audioUrl) => {
             // Если уже играет этот трек — останавливаем
             if (currentPreviewId === id && currentAudio) {
                 stopPreview();
@@ -297,6 +355,9 @@
             // Останавливаем предыдущий превью
             stopPreview();
             
+            const cover = document.getElementById('cover-' + id);
+            const playIcon = document.getElementById('play-icon-' + id);
+            
             // Создаём новый аудио элемент
             currentAudio = new Audio(audioUrl);
             currentAudio.preload = 'auto';
@@ -304,17 +365,21 @@
             try {
                 await currentAudio.play();
                 
-                // Показываем иконку паузы
                 cover.classList.add('playing');
                 playIcon.textContent = '⏸';
                 currentPreviewId = id;
+                previewStartTime = Date.now();
+                
+                // Запускаем анимацию прогресса
+                updateProgress(id);
                 
                 // Останавливаем через 30 секунд
-                previewTimeout = setTimeout(() => {
-                    stopPreview();
-                }, 30000);
+                setTimeout(() => {
+                    if (currentPreviewId === id) {
+                        stopPreview();
+                    }
+                }, PREVIEW_DURATION);
                 
-                // Если аудио закончилось раньше
                 currentAudio.addEventListener('ended', () => {
                     stopPreview();
                 });
@@ -325,22 +390,29 @@
         };
         
         window.stopPreview = () => {
+            if (previewAnimationFrame) {
+                cancelAnimationFrame(previewAnimationFrame);
+                previewAnimationFrame = null;
+            }
+            
             if (currentAudio) {
                 currentAudio.pause();
                 currentAudio.src = '';
                 currentAudio = null;
             }
             
-            if (previewTimeout) {
-                clearTimeout(previewTimeout);
-                previewTimeout = null;
-            }
-            
             if (currentPreviewId) {
                 const cover = document.getElementById('cover-' + currentPreviewId);
                 const playIcon = document.getElementById('play-icon-' + currentPreviewId);
+                const progressCircle = document.getElementById('progress-' + currentPreviewId);
+                
                 if (cover) cover.classList.remove('playing');
                 if (playIcon) playIcon.textContent = '▶';
+                if (progressCircle) {
+                    const circumference = window.innerWidth <= 480 ? 100.53 : 125.66;
+                    progressCircle.style.strokeDashoffset = circumference;
+                }
+                
                 currentPreviewId = null;
             }
         };
