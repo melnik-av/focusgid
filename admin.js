@@ -5,7 +5,8 @@ let selectedCoverFile = null;
 let selectedCoverUrl = null;
 let editingWalkId = null;
 
-// Переключение вкладок
+// === ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ===
+
 window.switchTab = (tab) => {
     currentTab = tab;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -22,7 +23,8 @@ window.switchTab = (tab) => {
     }
 };
 
-// Авторизация
+// === АВТОРИЗАЦИЯ ===
+
 window.login = async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
@@ -58,7 +60,7 @@ function renderCoverPreview(imageUrl, showDelete) {
     if (showDelete && imageUrl) {
         container.innerHTML = 
             '<img src="' + imageUrl + '" alt="Обложка">' +
-            '<button class="cover-delete-btn" onclick="event.stopPropagation(); removeWalkCover()" title="Удалить обложку">🗑</button>';
+            '<button class="cover-delete-btn" onclick="event.stopPropagation(); removeWalkCover()" title="Удалить обложку"></button>';
     } else {
         container.innerHTML = 
             '<div class="cover-preview-placeholder">' +
@@ -87,6 +89,60 @@ document.getElementById('walkCoverFile').addEventListener('change', (e) => {
         reader.readAsDataURL(file);
     }
 });
+
+// === МЕНЮ ТРИ ТОЧКИ ===
+
+function closeAllWalkMenus() {
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.classList.remove('active');
+    });
+    const overlay = document.getElementById('menuOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
+window.toggleWalkMenu = (id) => {
+    const menu = document.getElementById('walk-menu-' + id);
+    const overlay = document.getElementById('menuOverlay');
+    
+    if (menu.classList.contains('active')) {
+        closeAllWalkMenus();
+        return;
+    }
+    
+    closeAllWalkMenus();
+    
+    menu.classList.add('active');
+    if (overlay) overlay.classList.add('active');
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const overlay = document.getElementById('menuOverlay');
+    if (overlay) {
+        overlay.addEventListener('click', closeAllWalkMenus);
+    }
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeAllWalkMenus();
+    }
+});
+
+window.copyWalkLink = async (link, title) => {
+    closeAllWalkMenus();
+    try {
+        await navigator.clipboard.writeText(link);
+        alert('✅ Ссылка на "' + title + '" скопирована!');
+    } catch (err) {
+        const textArea = document.createElement('textarea');
+        textArea.value = link;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('Ссылка скопирована!');
+    }
+};
 
 // === АУДИОТРЕКИ ===
 
@@ -126,6 +182,8 @@ async function loadTracks() {
 // === ПРОГУЛКИ ===
 
 async function loadWalks() {
+    closeAllWalkMenus();
+    
     const { data: walks, error } = await supabase
         .from('walks')
         .select('*, audio_tracks(title)')
@@ -142,13 +200,17 @@ async function loadWalks() {
         return;
     }
     
+    const playerUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
+    
     list.innerHTML = walks.map(walk => {
         const trackTitle = walk.audio_tracks ? walk.audio_tracks.title : 'Без трека';
         const coverHtml = walk.cover_url 
             ? '<img src="' + walk.cover_url + '" alt="' + walk.title + '">'
             : '<div class="item-cover-placeholder">🚶</div>';
         
-        return '<div class="item-card">' +
+        const walkLink = playerUrl + '?track=' + walk.id;
+        
+        return '<div class="item-card" id="walk-' + walk.id + '">' +
             '<div class="item-header">' +
                 '<div class="item-cover">' + coverHtml + '</div>' +
                 '<div class="item-info">' +
@@ -156,10 +218,20 @@ async function loadWalks() {
                     (walk.description ? '<div class="item-description">' + walk.description + '</div>' : '') +
                     '<div class="item-meta">🎵 ' + trackTitle + '</div>' +
                 '</div>' +
+                '<button class="menu-button" onclick="toggleWalkMenu(\'' + walk.id + '\')"></button>' +
             '</div>' +
-            '<div class="item-actions">' +
-                '<button class="btn" onclick="editWalk(\'' + walk.id + '\')">Редактировать</button>' +
-                '<button class="btn btn-danger" onclick="deleteWalk(\'' + walk.id + '\')">Удалить</button>' +
+            
+            '<div class="dropdown-menu" id="walk-menu-' + walk.id + '">' +
+                '<button class="dropdown-item" onclick="copyWalkLink(\'' + walkLink + '\', \'' + walk.title.replace(/'/g, "\\'") + '\')">' +
+                    '<span class="dropdown-icon">🔗</span> Копировать ссылку' +
+                '</button>' +
+                '<div class="dropdown-divider"></div>' +
+                '<button class="dropdown-item" onclick="editWalk(\'' + walk.id + '\')">' +
+                    '<span class="dropdown-icon">✏️</span> Редактировать' +
+                '</button>' +
+                '<button class="dropdown-item danger" onclick="deleteWalk(\'' + walk.id + '\')">' +
+                    '<span class="dropdown-icon">🗑</span> Удалить' +
+                '</button>' +
             '</div>' +
         '</div>';
     }).join('');
@@ -262,158 +334,4 @@ window.saveWalk = async () => {
         }
         
         closeWalkModal();
-        loadWalks();
-        
-    } catch (e) {
-        alert('Ошибка: ' + e.message);
-        console.error(e);
-    }
-};
-
-// Редактирование прогулки
-window.editWalk = async (id) => {
-    const { data: walk, error } = await supabase
-        .from('walks')
-        .select('*, audio_tracks(title)')
-        .eq('id', id)
-        .single();
-    
-    if (error) {
-        alert('Ошибка: ' + error.message);
-        return;
-    }
-    
-    editingWalkId = id;
-    document.getElementById('walkModalTitle').textContent = 'Редактировать прогулку';
-    document.getElementById('walkTitle').value = walk.title || '';
-    document.getElementById('walkDescription').value = walk.description || '';
-    
-    await loadTracksToSelect();
-    
-    // Выбираем текущий трек
-    if (walk.audio_track_id) {
-        document.getElementById('walkTrack').value = walk.audio_track_id;
-    }
-    
-    // Загружаем текущую обложку
-    if (walk.cover_url) {
-        selectedCoverFile = null;
-        selectedCoverUrl = walk.cover_url;
-        renderCoverPreview(walk.cover_url, true);
-    } else {
-        selectedCoverFile = null;
-        selectedCoverUrl = null;
-        renderCoverPreview(null, false);
-    }
-    
-    document.getElementById('walkModal').classList.add('active');
-};
-
-// Удаление прогулки
-window.deleteWalk = async (id) => {
-    if (!confirm('Удалить эту прогулку?')) return;
-    
-    const { error } = await supabase
-        .from('walks')
-        .delete()
-        .eq('id', id);
-    
-    if (error) {
-        alert('Ошибка: ' + error.message);
-    } else {
-        loadWalks();
-    }
-};
-
-// === ТРЕКИ ===
-
-window.openTrackModal = () => {
-    document.getElementById('trackModal').classList.add('active');
-    document.getElementById('trackTitle').value = '';
-    document.getElementById('trackFile').value = '';
-};
-
-window.closeTrackModal = () => {
-    document.getElementById('trackModal').classList.remove('active');
-};
-
-window.saveTrack = async () => {
-    const title = document.getElementById('trackTitle').value.trim();
-    const file = document.getElementById('trackFile').files[0];
-    
-    if (!title || !file) {
-        alert('Заполните название и выберите файл');
-        return;
-    }
-    
-    try {
-        const fileName = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '');
-        
-        const { error: uploadError } = await supabase.storage
-            .from('tracks')
-            .upload(fileName, file, { cacheControl: '3600', upsert: false });
-        
-        if (uploadError) throw uploadError;
-        
-        const { data: { publicUrl } } = supabase.storage
-            .from('tracks')
-            .getPublicUrl(fileName);
-        
-        // Определение длительности
-        const audio = new Audio(publicUrl);
-        const duration = await new Promise((resolve) => {
-            const timeout = setTimeout(() => resolve(0), 10000);
-            audio.addEventListener('loadedmetadata', () => {
-                clearTimeout(timeout);
-                resolve(audio.duration);
-            });
-            audio.addEventListener('error', () => {
-                clearTimeout(timeout);
-                resolve(0);
-            });
-        });
-        
-        const { error } = await supabase
-            .from('audio_tracks')
-            .insert({
-                title,
-                file_url: publicUrl,
-                duration: duration > 0 ? Math.round(duration) : null
-            });
-        
-        if (error) throw error;
-        
-        closeTrackModal();
-        loadTracks();
-        
-    } catch (e) {
-        alert('Ошибка: ' + e.message);
-    }
-};
-
-window.deleteTrack = async (id) => {
-    if (!confirm('Удалить этот трек?')) return;
-    
-    const { error } = await supabase
-        .from('audio_tracks')
-        .delete()
-        .eq('id', id);
-    
-    if (error) {
-        alert('Ошибка: ' + error.message);
-    } else {
-        loadTracks();
-    }
-};
-
-function formatDuration(seconds) {
-    if (!seconds || isNaN(seconds)) return '';
-    const hours = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    if (hours > 0) {
-        return hours + ':' + mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
-    } else {
-        return mins + ':' + secs.toString().padStart(2, '0');
-    }
-}
+        loadWalks
