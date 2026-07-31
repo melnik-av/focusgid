@@ -4,8 +4,7 @@ let currentTab = 'walks';
 let selectedCoverFile = null;
 let selectedCoverUrl = null;
 let editingWalkId = null;
-
-// === ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ===
+let editingTrackId = null;
 
 window.switchTab = (tab) => {
     currentTab = tab;
@@ -22,8 +21,6 @@ window.switchTab = (tab) => {
         loadTracks();
     }
 };
-
-// === АВТОРИЗАЦИЯ ===
 
 window.login = async () => {
     const email = document.getElementById('email').value;
@@ -52,8 +49,6 @@ supabase.auth.onAuthStateChange((event, session) => {
         document.getElementById('adminPanel').classList.add('hidden');
     }
 });
-
-// === ОБЛОЖКА ===
 
 function renderCoverPreview(imageUrl, showDelete) {
     const container = document.getElementById('walkCoverPreview');
@@ -90,12 +85,23 @@ document.getElementById('walkCoverFile').addEventListener('change', (e) => {
     }
 });
 
-// === МЕНЮ ПРОГУЛОК ===
-
 function closeAllWalkMenus() {
     document.querySelectorAll('.dropdown-menu').forEach(menu => {
         menu.classList.remove('active');
     });
+}
+
+function closeAllTrackMenus() {
+    document.querySelectorAll('.track-dropdown-menu').forEach(menu => {
+        menu.classList.remove('active');
+    });
+}
+
+function closeAllMenus() {
+    closeAllWalkMenus();
+    closeAllTrackMenus();
+    const overlay = document.getElementById('menuOverlay');
+    if (overlay) overlay.classList.remove('active');
 }
 
 window.toggleWalkMenu = (id) => {
@@ -113,30 +119,6 @@ window.toggleWalkMenu = (id) => {
     if (overlay) overlay.classList.add('active');
 };
 
-window.copyWalkLink = async (link, title) => {
-    closeAllMenus();
-    try {
-        await navigator.clipboard.writeText(link);
-        alert('✅ Ссылка на "' + title + '" скопирована!');
-    } catch (err) {
-        const textArea = document.createElement('textarea');
-        textArea.value = link;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        alert('Ссылка скопирована!');
-    }
-};
-
-// === МЕНЮ ТРЕКОВ ===
-
-function closeAllTrackMenus() {
-    document.querySelectorAll('.track-dropdown-menu').forEach(menu => {
-        menu.classList.remove('active');
-    });
-}
-
 window.toggleTrackMenu = (id) => {
     const menu = document.getElementById('track-menu-' + id);
     const overlay = document.getElementById('menuOverlay');
@@ -152,14 +134,6 @@ window.toggleTrackMenu = (id) => {
     if (overlay) overlay.classList.add('active');
 };
 
-// Общий обработчик закрытия меню
-function closeAllMenus() {
-    closeAllWalkMenus();
-    closeAllTrackMenus();
-    const overlay = document.getElementById('menuOverlay');
-    if (overlay) overlay.classList.remove('active');
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.getElementById('menuOverlay');
     if (overlay) {
@@ -173,7 +147,21 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// === АУДИОТРЕКИ ===
+window.copyWalkLink = async (link, title) => {
+    closeAllMenus();
+    try {
+        await navigator.clipboard.writeText(link);
+        alert('✅ Ссылка на "' + title + '" скопирована!');
+    } catch (err) {
+        const textArea = document.createElement('textarea');
+        textArea.value = link;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('Ссылка скопирована!');
+    }
+};
 
 async function loadTracks() {
     closeAllMenus();
@@ -209,7 +197,10 @@ async function loadTracks() {
             '</div>' +
             
             '<div class="track-dropdown-menu" id="track-menu-' + track.id + '">' +
-                '<button class="track-dropdown-item" onclick="deleteTrack(\'' + track.id + '\')">' +
+                '<button class="track-dropdown-item" onclick="editTrack(\'' + track.id + '\', \'' + track.title.replace(/'/g, "\\'") + '\')">' +
+                    '<span>✏️</span> Редактировать' +
+                '</button>' +
+                '<button class="track-dropdown-item danger" onclick="deleteTrack(\'' + track.id + '\')">' +
                     '<span>🗑</span> Удалить' +
                 '</button>' +
             '</div>' +
@@ -217,7 +208,42 @@ async function loadTracks() {
     }).join('');
 }
 
-// === ПРОГУЛКИ ===
+window.editTrack = (id, title) => {
+    closeAllMenus();
+    editingTrackId = id;
+    document.getElementById('editTrackTitle').value = title;
+    document.getElementById('editTrackModal').classList.add('active');
+};
+
+window.closeEditTrackModal = () => {
+    document.getElementById('editTrackModal').classList.remove('active');
+    editingTrackId = null;
+};
+
+window.saveTrackName = async () => {
+    const title = document.getElementById('editTrackTitle').value.trim();
+    
+    if (!title) {
+        alert('Введите название трека');
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('audio_tracks')
+            .update({ title })
+            .eq('id', editingTrackId);
+        
+        if (error) throw error;
+        
+        closeEditTrackModal();
+        loadTracks();
+        
+    } catch (e) {
+        alert('Ошибка: ' + e.message);
+        console.error(e);
+    }
+};
 
 async function loadWalks() {
     closeAllMenus();
@@ -277,7 +303,6 @@ async function loadWalks() {
     }).join('');
 }
 
-// Открытие модалки прогулки (создание)
 window.openWalkModal = async () => {
     editingWalkId = null;
     document.getElementById('walkModalTitle').textContent = 'Добавить прогулку';
@@ -313,7 +338,6 @@ async function loadTracksToSelect() {
     }
 }
 
-// Сохранение прогулки
 window.saveWalk = async () => {
     const title = document.getElementById('walkTitle').value.trim();
     const description = document.getElementById('walkDescription').value.trim();
@@ -379,7 +403,6 @@ window.saveWalk = async () => {
     }
 };
 
-// Редактирование прогулки
 window.editWalk = async (id) => {
     closeAllMenus();
     
@@ -418,7 +441,6 @@ window.editWalk = async (id) => {
     document.getElementById('walkModal').classList.add('active');
 };
 
-// Удаление прогулки
 window.deleteWalk = async (id) => {
     closeAllMenus();
     if (!confirm('Удалить эту прогулку?')) return;
@@ -434,8 +456,6 @@ window.deleteWalk = async (id) => {
         loadWalks();
     }
 };
-
-// === ТРЕКИ ===
 
 window.openTrackModal = () => {
     document.getElementById('trackModal').classList.add('active');
