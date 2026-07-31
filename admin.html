@@ -42,24 +42,18 @@
             color: #666666;
             cursor: pointer;
             transition: all 0.2s;
+            font-family: inherit;
         }
         
-        .tab:hover {
-            color: #1a1a1a;
-        }
+        .tab:hover { color: #1a1a1a; }
         
         .tab.active {
             color: #1a1a1a;
             border-bottom-color: #1a1a1a;
         }
         
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
         
         .add-btn {
             background: #1a1a1a;
@@ -72,11 +66,10 @@
             cursor: pointer;
             transition: background 0.2s;
             margin-bottom: 20px;
+            font-family: inherit;
         }
         
-        .add-btn:hover {
-            background: #333333;
-        }
+        .add-btn:hover { background: #333333; }
         
         .item-list {
             display: flex;
@@ -99,35 +92,67 @@
         
         .item-header {
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
             gap: 16px;
+            align-items: flex-start;
             margin-bottom: 12px;
         }
+        
+        .item-cover {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: #f5f5f5;
+        }
+        
+        .item-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .item-cover-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #e0e0e0 0%, #cccccc 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+        
+        .item-info { flex: 1; min-width: 0; }
         
         .item-title {
             font-weight: 600;
             font-size: 18px;
             color: #1a1a1a;
-            margin: 0;
+            margin: 0 0 6px 0;
         }
         
         .item-description {
             font-size: 14px;
             color: #666666;
             line-height: 1.5;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .item-meta {
             font-size: 13px;
             color: #999999;
-            margin-bottom: 16px;
         }
         
         .item-actions {
             display: flex;
             gap: 8px;
+            margin-top: 12px;
         }
         
         .btn {
@@ -154,13 +179,9 @@
             border: none;
         }
         
-        .btn-primary:hover {
-            background: #333333;
-        }
+        .btn-primary:hover { background: #333333; }
         
-        .btn-danger {
-            color: #e94560;
-        }
+        .btn-danger { color: #e94560; }
         
         .btn-danger:hover {
             background: #fff5f7;
@@ -181,9 +202,7 @@
             padding: 20px;
         }
         
-        .modal-overlay.active {
-            display: flex;
-        }
+        .modal-overlay.active { display: flex; }
         
         .modal {
             background: #ffffff;
@@ -220,6 +239,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            font-family: inherit;
         }
         
         .modal-close:hover {
@@ -227,9 +247,7 @@
             color: #1a1a1a;
         }
         
-        .modal-body {
-            padding: 24px;
-        }
+        .modal-body { padding: 24px; }
         
         .field-label {
             font-size: 13px;
@@ -267,8 +285,78 @@
             gap: 8px;
         }
         
-        .modal-footer button {
-            flex: 1;
+        .modal-footer button { flex: 1; }
+        
+        /* Обложка в модалке */
+        .cover-upload { margin: 16px 0; }
+        
+        .cover-preview {
+            width: 150px;
+            height: 150px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+            border: 2px dashed #e0e0e0;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+        
+        .cover-preview:hover {
+            border-color: #1a1a1a;
+            background: #f0f0f0;
+        }
+        
+        .cover-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .cover-preview-placeholder {
+            color: #999999;
+            font-size: 13px;
+            text-align: center;
+            padding: 20px;
+            pointer-events: none;
+            line-height: 1.4;
+        }
+        
+        .cover-preview-placeholder .cover-icon {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .cover-delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ffffff;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            padding: 0;
+            margin: 0;
+            transition: all 0.2s;
+            z-index: 2;
+        }
+        
+        .cover-delete-btn:hover {
+            background: #e94560;
+            transform: scale(1.1);
         }
         
         .user-info {
@@ -296,6 +384,7 @@
             padding: 8px 16px;
             font-size: 14px;
             margin: 0;
+            font-family: inherit;
         }
         
         .logout-btn:hover {
@@ -325,6 +414,8 @@
             h1 { font-size: 26px; }
             .tabs { flex-direction: column; }
             .tab { width: 100%; text-align: center; }
+            .item-header { flex-direction: column; }
+            .item-cover { width: 100%; height: 180px; }
         }
     </style>
 </head>
@@ -349,7 +440,7 @@
         <h1>Админ-панель</h1>
         
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('walks')"> Прогулки</button>
+            <button class="tab active" onclick="switchTab('walks')">🚶 Прогулки</button>
             <button class="tab" onclick="switchTab('tracks')">🎵 Аудиотреки</button>
         </div>
         
@@ -370,8 +461,8 @@
     <div class="modal-overlay" id="walkModal">
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title">Добавить прогулку</h2>
-                <button class="modal-close" onclick="closeWalkModal()"></button>
+                <h2 class="modal-title" id="walkModalTitle">Добавить прогулку</h2>
+                <button class="modal-close" onclick="closeWalkModal()">✕</button>
             </div>
             <div class="modal-body">
                 <label class="field-label">Название прогулки *</label>
@@ -379,6 +470,17 @@
                 
                 <label class="field-label">Описание</label>
                 <textarea id="walkDescription" placeholder="Опишите прогулку..."></textarea>
+                
+                <div class="cover-upload">
+                    <label class="field-label">Обложка прогулки</label>
+                    <div class="cover-preview" id="walkCoverPreview" onclick="document.getElementById('walkCoverFile').click()">
+                        <div class="cover-preview-placeholder">
+                            <span class="cover-icon">+</span>
+                            Нажмите чтобы добавить обложку
+                        </div>
+                    </div>
+                    <input type="file" id="walkCoverFile" accept="image/*" style="display: none;">
+                </div>
                 
                 <label class="field-label">Аудиотрек</label>
                 <select id="walkTrack">
