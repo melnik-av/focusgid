@@ -60,7 +60,7 @@ function renderCoverPreview(imageUrl, showDelete) {
     if (showDelete && imageUrl) {
         container.innerHTML = 
             '<img src="' + imageUrl + '" alt="Обложка">' +
-            '<button class="cover-delete-btn" onclick="event.stopPropagation(); removeWalkCover()" title="Удалить обложку"></button>';
+            '<button class="cover-delete-btn" onclick="event.stopPropagation(); removeWalkCover()" title="Удалить обложку">🗑</button>';
     } else {
         container.innerHTML = 
             '<div class="cover-preview-placeholder">' +
@@ -218,7 +218,7 @@ async function loadWalks() {
                     (walk.description ? '<div class="item-description">' + walk.description + '</div>' : '') +
                     '<div class="item-meta">🎵 ' + trackTitle + '</div>' +
                 '</div>' +
-                '<button class="menu-button" onclick="toggleWalkMenu(\'' + walk.id + '\')"></button>' +
+                '<button class="menu-button" onclick="toggleWalkMenu(\'' + walk.id + '\')" title="Меню">⋯</button>' +
             '</div>' +
             
             '<div class="dropdown-menu" id="walk-menu-' + walk.id + '">' +
@@ -230,7 +230,7 @@ async function loadWalks() {
                     '<span class="dropdown-icon">✏️</span> Редактировать' +
                 '</button>' +
                 '<button class="dropdown-item danger" onclick="deleteWalk(\'' + walk.id + '\')">' +
-                    '<span class="dropdown-icon">🗑</span> Удалить' +
+                    '<span class="dropdown-icon"></span> Удалить' +
                 '</button>' +
             '</div>' +
         '</div>';
