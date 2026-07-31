@@ -1,9 +1,25 @@
 import { supabase } from './supabase-config.js';
 
-let selectedCoverFile = null;
-let selectedCoverUrl = null;
-let currentMenuId = null;
+let currentTab = 'walks';
 
+// Переключение вкладок
+window.switchTab = (tab) => {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    
+    if (tab === 'walks') {
+        document.querySelector('.tab:nth-child(1)').classList.add('active');
+        document.getElementById('walksTab').classList.add('active');
+        loadWalks();
+    } else {
+        document.querySelector('.tab:nth-child(2)').classList.add('active');
+        document.getElementById('tracksTab').classList.add('active');
+        loadTracks();
+    }
+};
+
+// Авторизация
 window.login = async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
@@ -17,10 +33,7 @@ window.login = async () => {
 };
 
 window.logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-        alert('Ошибка выхода: ' + error.message);
-    }
+    await supabase.auth.signOut();
 };
 
 supabase.auth.onAuthStateChange((event, session) => {
@@ -28,420 +41,199 @@ supabase.auth.onAuthStateChange((event, session) => {
         document.getElementById('loginForm').classList.add('hidden');
         document.getElementById('adminPanel').classList.remove('hidden');
         document.getElementById('userEmail').textContent = session.user.email;
-        loadTracks();
+        loadWalks();
     } else {
         document.getElementById('loginForm').classList.remove('hidden');
         document.getElementById('adminPanel').classList.add('hidden');
     }
 });
 
-window.openAddModal = () => {
-    document.getElementById('addModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
-};
-
-window.closeAddModal = () => {
-    const title = document.getElementById('title').value.trim();
-    const file = document.getElementById('mp3file').files[0];
-    
-    if (title || file) {
-        if (!confirm('Форма не заполнена. Закрыть без сохранения?')) {
-            return;
-        }
-    }
-    
-    document.getElementById('addModal').classList.remove('active');
-    document.body.style.overflow = '';
-    
-    document.getElementById('title').value = '';
-    document.getElementById('description').value = '';
-    document.getElementById('price').value = '500';
-    document.getElementById('days').value = '7';
-    document.getElementById('mp3file').value = '';
-    removeCover();
-    
-    const status = document.getElementById('modalStatus');
-    status.textContent = '';
-    status.style.borderColor = '#e0e0e0';
-};
-
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        closeAllMenus();
-    }
-});
-
-document.getElementById('coverFile').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        selectedCoverFile = file;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            selectedCoverUrl = e.target.result;
-            renderCoverPreview('coverPreview', e.target.result, true);
-        };
-        reader.readAsDataURL(file);
-    }
-});
-
-function renderCoverPreview(containerId, imageUrl, showDelete) {
-    const container = document.getElementById(containerId);
-    if (showDelete && imageUrl) {
-        const deleteCall = containerId === 'coverPreview' 
-            ? 'removeCover()' 
-            : 'removeEditCover(\'' + containerId.replace('edit-cover-preview-', '') + '\')';
-        container.innerHTML = 
-            '<img src="' + imageUrl + '" alt="Обложка">' +
-            '<button class="cover-delete-btn" onclick="event.stopPropagation(); ' + deleteCall + '" title="Удалить обложку">🗑</button>';
-    } else {
-        container.innerHTML = 
-            '<div class="cover-preview-placeholder">' +
-                '<span class="cover-icon">+</span>' +
-                'Нажмите чтобы добавить обложку' +
-            '</div>';
-    }
-}
-
-window.removeCover = () => {
-    selectedCoverFile = null;
-    selectedCoverUrl = null;
-    document.getElementById('coverFile').value = '';
-    renderCoverPreview('coverPreview', null, false);
-};
-
-function getQRUrl(text, size = 200) {
-    return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&data=' + encodeURIComponent(text) + '&margin=10&color=000000&bgcolor=ffffff';
-}
-
-function formatDate(dateStr) {
-    if (!dateStr) return '—';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('ru-RU', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-function formatDuration(seconds) {
-    if (!seconds || isNaN(seconds)) return '—';
-    const hours = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    if (hours > 0) {
-        return hours + ':' + mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
-    } else {
-        return mins + ':' + secs.toString().padStart(2, '0');
-    }
-}
-
-function closeAllMenus() {
-    document.querySelectorAll('.dropdown-menu').forEach(menu => {
-        menu.classList.remove('active');
-    });
-    document.getElementById('menuOverlay').classList.remove('active');
-    currentMenuId = null;
-}
-
-window.toggleMenu = (id) => {
-    const menu = document.getElementById('menu-' + id);
-    const overlay = document.getElementById('menuOverlay');
-    
-    if (currentMenuId === id) {
-        closeAllMenus();
-        return;
-    }
-    
-    closeAllMenus();
-    
-    menu.classList.add('active');
-    overlay.classList.add('active');
-    currentMenuId = id;
-};
-
-document.getElementById('menuOverlay').addEventListener('click', closeAllMenus);
-
+// Загрузка аудиотреков
 async function loadTracks() {
-    closeAllMenus();
-    
     const { data: tracks, error } = await supabase
-        .from('tracks')
+        .from('audio_tracks')
         .select('*')
         .order('created_at', { ascending: false });
     
     if (error) {
-        console.error('Ошибка загрузки:', error);
+        console.error('Ошибка загрузки треков:', error);
         return;
     }
-    
-    updateTotalStats(tracks);
     
     const list = document.getElementById('tracksList');
     if (!tracks || tracks.length === 0) {
-        list.innerHTML = '<div style="color: #999999; text-align: center; padding: 40px;">Нет треков</div>';
+        list.innerHTML = '<div style="color: #999999; text-align: center; padding: 40px;">Нет загруженных треков</div>';
         return;
     }
     
-    const playerUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
-    
-    list.innerHTML = tracks.map(t => {
-        const trackLink = playerUrl + '?track=' + t.id;
-        const descriptionHtml = t.description 
-            ? '<div class="track-description">' + t.description + '</div>' 
-            : '';
-        const qrUrl = getQRUrl(trackLink, 200);
-        const playCount = t.play_count || 0;
-        const lastPlayed = formatDate(t.last_played_at);
-        const duration = formatDuration(t.duration);
-        const coverHtml = t.cover_url 
-            ? '<div class="track-cover-thumb"><img src="' + t.cover_url + '" alt="' + t.title + '"></div>'
-            : '';
-        
-        const statusText = t.active ? 'Отключить' : 'Включить';
-        const statusIcon = t.active ? '⏸' : '▶';
-        
-        return '<div class="track-item" id="track-' + t.id + '">' +
-            '<div class="track-header">' +
-                '<div class="track-header-content">' +
-                    coverHtml +
-                    '<div class="track-title">' + t.title + '</div>' +
-                    descriptionHtml +
-                    '<div class="track-meta">' + t.price + ' руб · ' + t.duration_days + ' дней · ' + duration + '</div>' +
-                '</div>' +
-                '<button class="menu-button" onclick="toggleMenu(\'' + t.id + '\')">⋯</button>' +
+    list.innerHTML = tracks.map(track => {
+        const duration = formatDuration(track.duration);
+        return '<div class="item-card">' +
+            '<div class="item-header">' +
+                '<h3 class="item-title">' + track.title + '</h3>' +
             '</div>' +
-            
-            '<div class="dropdown-menu" id="menu-' + t.id + '">' +
-                '<button class="dropdown-item" onclick="copyLink(\'' + trackLink + '\', \'' + t.title.replace(/'/g, "\\'") + '\')">' +
-                    '<span class="dropdown-icon">🔗</span> Копировать ссылку' +
-                '</button>' +
-                '<button class="dropdown-item" onclick="downloadQR(\'' + qrUrl + '\', \'' + t.title.replace(/'/g, "\\'") + '\')">' +
-                    '<span class="dropdown-icon">📱</span> Скачать QR-код' +
-                '</button>' +
-                '<div class="dropdown-divider"></div>' +
-                '<button class="dropdown-item" onclick="showEditForm(\'' + t.id + '\', \'' + t.title.replace(/'/g, "\\'") + '\', \'' + (t.description || '').replace(/'/g, "\\'") + '\', ' + t.price + ', ' + t.duration_days + ', \'' + (t.cover_url || '') + '\')">' +
-                    '<span class="dropdown-icon">✏️</span> Редактировать' +
-                '</button>' +
-                '<button class="dropdown-item" onclick="toggleTrack(\'' + t.id + '\', ' + !t.active + ')">' +
-                    '<span class="dropdown-icon">' + statusIcon + '</span> ' + statusText +
-                '</button>' +
-                '<div class="dropdown-divider"></div>' +
-                '<button class="dropdown-item danger" onclick="deleteTrack(\'' + t.id + '\')">' +
-                    '<span class="dropdown-icon">🗑</span> Удалить' +
-                '</button>' +
-            '</div>' +
-            
-            '<div class="track-link">' + trackLink + '</div>' +
-            
-            '<div class="stats-row">' +
-                '<div class="stat-card">' +
-                    '<div class="stat-value">' + playCount + '</div>' +
-                    '<div class="stat-label">Прослушиваний</div>' +
-                '</div>' +
-                '<div class="stat-card">' +
-                    '<div class="stat-value" style="font-size: 14px;">' + lastPlayed + '</div>' +
-                    '<div class="stat-label">Последнее прослушивание</div>' +
-                '</div>' +
+            '<div class="item-meta">' + (duration || 'Длительность не определена') + '</div>' +
+            '<div class="item-actions">' +
+                '<button class="btn btn-danger" onclick="deleteTrack(\'' + track.id + '\')">Удалить</button>' +
             '</div>' +
         '</div>';
     }).join('');
 }
 
-function updateTotalStats(tracks) {
-    const totalTracks = tracks.length;
-    const totalPlays = tracks.reduce((sum, t) => sum + (t.play_count || 0), 0);
+// Загрузка прогулок
+async function loadWalks() {
+    const { data: walks, error } = await supabase
+        .from('walks')
+        .select('*, audio_tracks(title)')
+        .order('created_at', { ascending: false });
     
-    let topTrack = tracks.reduce((max, t) => {
-        return (t.play_count || 0) > (max.play_count || 0) ? t : max;
-    }, tracks[0] || { play_count: 0, title: '—' });
+    if (error) {
+        console.error('Ошибка загрузки прогулок:', error);
+        return;
+    }
     
-    document.getElementById('totalTracks').textContent = totalTracks;
-    document.getElementById('totalPlays').textContent = totalPlays;
-    document.getElementById('topTrack').textContent = topTrack.play_count > 0 ? topTrack.title : '—';
+    const list = document.getElementById('walksList');
+    if (!walks || walks.length === 0) {
+        list.innerHTML = '<div style="color: #999999; text-align: center; padding: 40px;">Нет прогулок</div>';
+        return;
+    }
+    
+    list.innerHTML = walks.map(walk => {
+        const trackTitle = walk.audio_tracks ? walk.audio_tracks.title : 'Без трека';
+        return '<div class="item-card">' +
+            '<div class="item-header">' +
+                '<h3 class="item-title">' + walk.title + '</h3>' +
+            '</div>' +
+            (walk.description ? '<div class="item-description">' + walk.description + '</div>' : '') +
+            '<div class="item-meta"> ' + trackTitle + '</div>' +
+            '<div class="item-actions">' +
+                '<button class="btn" onclick="editWalk(\'' + walk.id + '\')">Редактировать</button>' +
+                '<button class="btn btn-danger" onclick="deleteWalk(\'' + walk.id + '\')">Удалить</button>' +
+            '</div>' +
+        '</div>';
+    }).join('');
 }
 
-window.showEditForm = (id, title, description, price, days, coverUrl) => {
-    closeAllMenus();
+// Открытие модалки прогулки
+window.openWalkModal = async () => {
+    document.getElementById('walkModal').classList.add('active');
+    document.getElementById('walkTitle').value = '';
+    document.getElementById('walkDescription').value = '';
     
-    const trackItem = document.getElementById('track-' + id);
-    const existingForm = trackItem.querySelector('.edit-form');
+    // Загружаем список треков для выбора
+    const { data: tracks } = await supabase
+        .from('audio_tracks')
+        .select('id, title')
+        .order('title');
     
-    if (existingForm) {
-        existingForm.remove();
-        return;
+    const select = document.getElementById('walkTrack');
+    select.innerHTML = '<option value="">Без трека</option>';
+    if (tracks) {
+        tracks.forEach(track => {
+            select.innerHTML += '<option value="' + track.id + '">' + track.title + '</option>';
+        });
     }
-    
-    const form = document.createElement('div');
-    form.className = 'edit-form';
-    form.innerHTML = 
-        '<label class="field-label">Название трека</label>' +
-        '<input type="text" id="edit-title-' + id + '" value="' + title + '">' +
-        
-        '<label class="field-label">Описание</label>' +
-        '<textarea id="edit-description-' + id + '">' + description + '</textarea>' +
-        
-        '<label class="field-label">Обложка</label>' +
-        '<div class="cover-preview" id="edit-cover-preview-' + id + '" onclick="document.getElementById(\'edit-cover-file-' + id + '\').click()">' +
-        '</div>' +
-        '<input type="file" id="edit-cover-file-' + id + '" accept="image/*" style="display: none;">' +
-        
-        '<label class="field-label">Цена (руб)</label>' +
-        '<input type="number" id="edit-price-' + id + '" value="' + price + '">' +
-        
-        '<label class="field-label">Дней доступа</label>' +
-        '<input type="number" id="edit-days-' + id + '" value="' + days + '">' +
-        
-        '<div class="edit-actions">' +
-            '<button class="btn-save" onclick="saveTrack(\'' + id + '\', \'' + coverUrl + '\')">Сохранить</button>' +
-            '<button class="btn-cancel" onclick="loadTracks()">Отмена</button>' +
-        '</div>';
-    
-    trackItem.appendChild(form);
-    
-    renderCoverPreview('edit-cover-preview-' + id, coverUrl, !!coverUrl);
-    
-    document.getElementById('edit-cover-file-' + id).addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                renderCoverPreview('edit-cover-preview-' + id, e.target.result, true);
-                document.getElementById('edit-cover-file-' + id).dataset.newCover = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-    });
 };
 
-window.removeEditCover = (id) => {
-    renderCoverPreview('edit-cover-preview-' + id, null, false);
-    document.getElementById('edit-cover-file-' + id).value = '';
-    delete document.getElementById('edit-cover-file-' + id).dataset.newCover;
+window.closeWalkModal = () => {
+    document.getElementById('walkModal').classList.remove('active');
 };
 
-window.saveTrack = async (id, oldCoverUrl) => {
-    const title = document.getElementById('edit-title-' + id).value.trim();
-    const description = document.getElementById('edit-description-' + id).value.trim();
-    const price = parseInt(document.getElementById('edit-price-' + id).value);
-    const days = parseInt(document.getElementById('edit-days-' + id).value);
+// Сохранение прогулки
+window.saveWalk = async () => {
+    const title = document.getElementById('walkTitle').value.trim();
+    const description = document.getElementById('walkDescription').value.trim();
+    const trackId = document.getElementById('walkTrack').value || null;
     
     if (!title) {
-        alert('Название обязательно');
+        alert('Введите название прогулки');
         return;
     }
     
-    const status = document.getElementById('status');
-    status.textContent = 'Сохранение...';
+    const { error } = await supabase
+        .from('walks')
+        .insert({
+            title,
+            description: description || null,
+            audio_track_id: trackId
+        });
+    
+    if (error) {
+        alert('Ошибка: ' + error.message);
+    } else {
+        closeWalkModal();
+        loadWalks();
+    }
+};
+
+// Открытие модалки трека
+window.openTrackModal = () => {
+    document.getElementById('trackModal').classList.add('active');
+    document.getElementById('trackTitle').value = '';
+    document.getElementById('trackFile').value = '';
+};
+
+window.closeTrackModal = () => {
+    document.getElementById('trackModal').classList.remove('active');
+};
+
+// Сохранение трека
+window.saveTrack = async () => {
+    const title = document.getElementById('trackTitle').value.trim();
+    const file = document.getElementById('trackFile').files[0];
+    
+    if (!title || !file) {
+        alert('Заполните название и выберите файл');
+        return;
+    }
     
     try {
-        let coverUrl = oldCoverUrl;
+        // Загрузка файла
+        const fileName = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '');
         
-        const coverFileInput = document.getElementById('edit-cover-file-' + id);
-        const newCoverData = coverFileInput.dataset.newCover;
-        
-        if (newCoverData) {
-            status.textContent = 'Загрузка обложки...';
-            
-            const response = await fetch(newCoverData);
-            const blob = await response.blob();
-            
-            const fileName = 'cover_' + Date.now() + '_' + id + '.jpg';
-            const { error: uploadError } = await supabase.storage
-                .from('covers')
-                .upload(fileName, blob, {
-                    cacheControl: '3600',
-                    upsert: false
-                });
-            
-            if (uploadError) throw uploadError;
-            
-            const { data: { publicUrl } } = supabase.storage
-                .from('covers')
-                .getPublicUrl(fileName);
-            
-            coverUrl = publicUrl;
-        }
-        
-        const { error } = await supabase
+        const { error: uploadError } = await supabase.storage
             .from('tracks')
-            .update({
+            .upload(fileName, file, { cacheControl: '3600', upsert: false });
+        
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+            .from('tracks')
+            .getPublicUrl(fileName);
+        
+        // Определение длительности
+        const audio = new Audio(publicUrl);
+        const duration = await new Promise((resolve) => {
+            audio.addEventListener('loadedmetadata', () => resolve(audio.duration));
+            audio.addEventListener('error', () => resolve(0));
+        });
+        
+        // Создание записи
+        const { error } = await supabase
+            .from('audio_tracks')
+            .insert({
                 title,
-                description: description || null,
-                price,
-                duration_days: days,
-                cover_url: coverUrl
-            })
-            .eq('id', id);
+                file_url: publicUrl,
+                duration: duration > 0 ? Math.round(duration) : null
+            });
         
         if (error) throw error;
         
-        status.textContent = '✅ Изменения сохранены!';
-        status.style.borderColor = '#4CAF50';
-        
-        setTimeout(() => {
-            status.textContent = '';
-            status.style.borderColor = '#e0e0e0';
-        }, 3000);
-        
+        closeTrackModal();
         loadTracks();
+        
     } catch (e) {
-        status.textContent = '❌ Ошибка: ' + e.message;
-        status.style.borderColor = '#e94560';
-        console.error('Ошибка сохранения:', e);
+        alert('Ошибка: ' + e.message);
     }
 };
 
-window.copyLink = async (link, title) => {
-    closeAllMenus();
-    try {
-        await navigator.clipboard.writeText(link);
-        
-        const status = document.getElementById('status');
-        status.textContent = '✅ Ссылка скопирована!';
-        status.style.borderColor = '#4CAF50';
-        
-        setTimeout(() => {
-            status.textContent = '';
-            status.style.borderColor = '#e0e0e0';
-        }, 3000);
-    } catch (err) {
-        const textArea = document.createElement('textarea');
-        textArea.value = link;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        
-        alert('Ссылка скопирована!');
-    }
-};
-
-window.downloadQR = async (qrUrl, title) => {
-    closeAllMenus();
-    try {
-        const response = await fetch(qrUrl);
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'QR-' + title.replace(/[^a-z0-9а-яё]/gi, '_') + '.png';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-    } catch (error) {
-        console.error('Ошибка скачивания:', error);
-        window.open(qrUrl, '_blank');
-    }
-};
-
-window.toggleTrack = async (id, active) => {
-    closeAllMenus();
+// Удаление трека
+window.deleteTrack = async (id) => {
+    if (!confirm('Удалить этот трек?')) return;
+    
     const { error } = await supabase
-        .from('tracks')
-        .update({ active })
+        .from('audio_tracks')
+        .delete()
         .eq('id', id);
     
     if (error) {
@@ -451,135 +243,35 @@ window.toggleTrack = async (id, active) => {
     }
 };
 
-window.deleteTrack = async (id) => {
-    closeAllMenus();
-    if (!confirm('Удалить этот трек?')) return;
+// Удаление прогулки
+window.deleteWalk = async (id) => {
+    if (!confirm('Удалить эту прогулку?')) return;
     
     const { error } = await supabase
-        .from('tracks')
+        .from('walks')
         .delete()
         .eq('id', id);
     
     if (error) {
-        alert('Ошибка удаления: ' + error.message);
+        alert('Ошибка: ' + error.message);
     } else {
-        loadTracks();
+        loadWalks();
     }
 };
 
-window.uploadTrack = async () => {
-    const status = document.getElementById('modalStatus');
-    const uploadBtn = document.getElementById('uploadBtn');
-    const title = document.getElementById('title').value.trim();
-    const description = document.getElementById('description').value.trim();
-    const price = parseInt(document.getElementById('price').value) || 0;
-    const days = parseInt(document.getElementById('days').value) || 7;
-    const file = document.getElementById('mp3file').files[0];
-
-    if (!file || !title) { 
-        alert('Заполните название и выберите аудиофайл'); 
-        return; 
-    }
-
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-        alert('Вы не авторизованы. Войдите в систему.');
-        return;
-    }
-
-    status.textContent = 'Загрузка аудио...';
-    uploadBtn.disabled = true;
-
-    try {
-        const audioFileName = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
-        
-        const { error: audioUploadError } = await supabase.storage
-            .from('tracks')
-            .upload(audioFileName, file, {
-                cacheControl: '3600',
-                upsert: false
-            });
-        
-        if (audioUploadError) throw audioUploadError;
-
-        const { data: { publicUrl: audioUrl } } = supabase.storage
-            .from('tracks')
-            .getPublicUrl(audioFileName);
-
-        let coverUrl = null;
-        if (selectedCoverFile) {
-            status.textContent = 'Загрузка обложки...';
-            
-            const coverFileName = 'cover_' + Date.now() + '.jpg';
-            const { error: coverUploadError } = await supabase.storage
-                .from('covers')
-                .upload(coverFileName, selectedCoverFile, {
-                    cacheControl: '3600',
-                    upsert: false
-                });
-            
-            if (coverUploadError) throw coverUploadError;
-            
-            const { data: { publicUrl: coverPublicUrl } } = supabase.storage
-                .from('covers')
-                .getPublicUrl(coverFileName);
-            
-            coverUrl = coverPublicUrl;
-        }
-
-        status.textContent = 'Создание записи в базе...';
-        
-        const trackData = {
-            title,
-            description: description || null,
-            price,
-            duration_days: days,
-            duration: null,
-            file_url: audioUrl,
-            active: true,
-            play_count: 0
-        };
-        
-        if (coverUrl) {
-            trackData.cover_url = coverUrl;
-        }
-        
-        const { error: dbError } = await supabase
-            .from('tracks')
-            .insert(trackData)
-            .select();
-
-        if (dbError) throw dbError;
-        
-        status.textContent = '✅ Трек добавлен!';
-        status.style.borderColor = '#4CAF50';
-        
-        setTimeout(() => {
-            // Закрываем без проверки (форма уже обработана)
-            document.getElementById('addModal').classList.remove('active');
-            document.body.style.overflow = '';
-            
-            // Очищаем форму
-            document.getElementById('title').value = '';
-            document.getElementById('description').value = '';
-            document.getElementById('price').value = '500';
-            document.getElementById('days').value = '7';
-            document.getElementById('mp3file').value = '';
-            removeCover();
-            
-            const status = document.getElementById('modalStatus');
-            status.textContent = '';
-            status.style.borderColor = '#e0e0e0';
-            
-            loadTracks();
-        }, 1500);
-        
-    } catch (e) {
-        console.error('Ошибка:', e);
-        status.textContent = '❌ Ошибка: ' + e.message;
-        status.style.borderColor = '#e94560';
-    } finally {
-        uploadBtn.disabled = false;
-    }
+// Редактирование прогулки (заглушка)
+window.editWalk = (id) => {
+    alert('Функция редактирования будет добавлена позже');
 };
+
+function formatDuration(seconds) {
+    if (!seconds || isNaN(seconds)) return '';
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    if (hours > 0) {
+        return hours + ':' + mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+    } else {
+        return mins + ':' + secs.toString().padStart(2, '0');
+    }
+}
