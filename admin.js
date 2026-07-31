@@ -334,4 +334,161 @@ window.saveWalk = async () => {
         }
         
         closeWalkModal();
-        loadWalks
+        loadWalks();
+        
+    } catch (e) {
+        alert('Ошибка: ' + e.message);
+        console.error(e);
+    }
+};
+
+// Редактирование прогулки
+window.editWalk = async (id) => {
+    closeAllWalkMenus();
+    
+    const { data: walk, error } = await supabase
+        .from('walks')
+        .select('*, audio_tracks(title)')
+        .eq('id', id)
+        .single();
+    
+    if (error) {
+        alert('Ошибка: ' + error.message);
+        return;
+    }
+    
+    editingWalkId = id;
+    document.getElementById('walkModalTitle').textContent = 'Редактировать прогулку';
+    document.getElementById('walkTitle').value = walk.title || '';
+    document.getElementById('walkDescription').value = walk.description || '';
+    
+    await loadTracksToSelect();
+    
+    // Выбираем текущий трек
+    if (walk.audio_track_id) {
+        document.getElementById('walkTrack').value = walk.audio_track_id;
+    }
+    
+    // Загружаем текущую обложку
+    if (walk.cover_url) {
+        selectedCoverFile = null;
+        selectedCoverUrl = walk.cover_url;
+        renderCoverPreview(walk.cover_url, true);
+    } else {
+        selectedCoverFile = null;
+        selectedCoverUrl = null;
+        renderCoverPreview(null, false);
+    }
+    
+    document.getElementById('walkModal').classList.add('active');
+};
+
+// Удаление прогулки
+window.deleteWalk = async (id) => {
+    closeAllWalkMenus();
+    if (!confirm('Удалить эту прогулку?')) return;
+    
+    const { error } = await supabase
+        .from('walks')
+        .delete()
+        .eq('id', id);
+    
+    if (error) {
+        alert('Ошибка: ' + error.message);
+    } else {
+        loadWalks();
+    }
+};
+
+// === ТРЕКИ ===
+
+window.openTrackModal = () => {
+    document.getElementById('trackModal').classList.add('active');
+    document.getElementById('trackTitle').value = '';
+    document.getElementById('trackFile').value = '';
+};
+
+window.closeTrackModal = () => {
+    document.getElementById('trackModal').classList.remove('active');
+};
+
+window.saveTrack = async () => {
+    const title = document.getElementById('trackTitle').value.trim();
+    const file = document.getElementById('trackFile').files[0];
+    
+    if (!title || !file) {
+        alert('Заполните название и выберите файл');
+        return;
+    }
+    
+    try {
+        const fileName = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '');
+        
+        const { error: uploadError } = await supabase.storage
+            .from('tracks')
+            .upload(fileName, file, { cacheControl: '3600', upsert: false });
+        
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+            .from('tracks')
+            .getPublicUrl(fileName);
+        
+        // Определение длительности
+        const audio = new Audio(publicUrl);
+        const duration = await new Promise((resolve) => {
+            const timeout = setTimeout(() => resolve(0), 10000);
+            audio.addEventListener('loadedmetadata', () => {
+                clearTimeout(timeout);
+                resolve(audio.duration);
+            });
+            audio.addEventListener('error', () => {
+                clearTimeout(timeout);
+                resolve(0);
+            });
+        });
+        
+        const { error } = await supabase
+            .from('audio_tracks')
+            .insert({
+                title,
+                file_url: publicUrl,
+                duration: duration > 0 ? Math.round(duration) : null
+            });
+        
+        if (error) throw error;
+        
+        closeTrackModal();
+        loadTracks();
+        
+    } catch (e) {
+        alert('Ошибка: ' + e.message);
+    }
+};
+
+window.deleteTrack = async (id) => {
+    if (!confirm('Удалить этот трек?')) return;
+    
+    const { error } = await supabase
+        .from('audio_tracks')
+        .delete()
+        .eq('id', id);
+    
+    if (error) {
+        alert('Ошибка: ' + error.message);
+    } else {
+        loadTracks();
+    }
+};
+
+function formatDuration(seconds) {
+    if (!seconds || isNaN(seconds)) return '';
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    if (hours > 0) {
+        return hours + ':' + mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+    } else {
+        return mins + ':' + secs.toString().padStart(2, '0');
+    }
+}
