@@ -60,7 +60,7 @@ function renderCoverPreview(imageUrl, showDelete) {
     if (showDelete && imageUrl) {
         container.innerHTML = 
             '<img src="' + imageUrl + '" alt="Обложка">' +
-            '<button class="cover-delete-btn" onclick="event.stopPropagation(); removeWalkCover()" title="Удалить обложку">🗑</button>';
+            '<button class="cover-delete-btn" onclick="event.stopPropagation(); removeWalkCover()" title="Удалить обложку"></button>';
     } else {
         container.innerHTML = 
             '<div class="cover-preview-placeholder">' +
@@ -202,6 +202,9 @@ async function loadWalks() {
     
     const playerUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
     
+    // SVG иконка трёх точек
+    const dotsIcon = '<svg width="20" height="4" viewBox="0 0 20 4"><circle cx="2" cy="2" r="2" fill="#1a1a1a"/><circle cx="10" cy="2" r="2" fill="#1a1a1a"/><circle cx="18" cy="2" r="2" fill="#1a1a1a"/></svg>';
+    
     list.innerHTML = walks.map(walk => {
         const trackTitle = walk.audio_tracks ? walk.audio_tracks.title : 'Без трека';
         const coverHtml = walk.cover_url 
@@ -218,7 +221,7 @@ async function loadWalks() {
                     (walk.description ? '<div class="item-description">' + walk.description + '</div>' : '') +
                     '<div class="item-meta">🎵 ' + trackTitle + '</div>' +
                 '</div>' +
-                '<button class="menu-button" onclick="toggleWalkMenu(\'' + walk.id + '\')" title="Меню">⋯</button>' +
+                '<button class="menu-button" onclick="toggleWalkMenu(\'' + walk.id + '\')" title="Меню">' + dotsIcon + '</button>' +
             '</div>' +
             
             '<div class="dropdown-menu" id="walk-menu-' + walk.id + '">' +
@@ -230,7 +233,7 @@ async function loadWalks() {
                     '<span class="dropdown-icon">✏️</span> Редактировать' +
                 '</button>' +
                 '<button class="dropdown-item danger" onclick="deleteWalk(\'' + walk.id + '\')">' +
-                    '<span class="dropdown-icon"></span> Удалить' +
+                    '<span class="dropdown-icon">🗑</span> Удалить' +
                 '</button>' +
             '</div>' +
         '</div>';
