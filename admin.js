@@ -187,7 +187,7 @@ window.copyWalkLink = async (link, title) => {
     closeAllMenus();
     try {
         await navigator.clipboard.writeText(link);
-        alert('✅ Ссылка на "' + title + '" скопирована!');
+        alert('✅ Ссылка "' + title + '" скопирована!');
     } catch (err) {
         const textArea = document.createElement('textarea');
         textArea.value = link;
@@ -317,7 +317,7 @@ window.saveTrack = async () => {
     document.getElementById('trackModalFooter').style.display = 'none';
     
     try {
-        document.getElementById('spinnerText').textContent = '⏳ Загрузка файла...';
+        document.getElementById('spinnerText').textContent = ' Загрузка файла...';
         
         const fileName = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '');
         
@@ -331,7 +331,7 @@ window.saveTrack = async () => {
             .from('tracks')
             .getPublicUrl(fileName);
         
-        document.getElementById('spinnerText').textContent = '⏱️ Определение длительности...';
+        document.getElementById('spinnerText').textContent = '️ Определение длительности...';
         
         let duration = null;
         try {
@@ -456,16 +456,48 @@ async function loadWalks() {
             ? '<img src="' + walk.cover_url + '" alt="' + walk.title + '">'
             : '<div class="item-cover-placeholder">🚶</div>';
         
-        const walkLink = playerUrl + '?track=' + walk.id;
+        const walkLink = playerUrl + '?walk=' + walk.id;
         
         let tracksInfo = '';
+        let menuItems = '';
+        
         if (walk.type === 'pair') {
             const femaleTrack = walk.audio_tracks ? walk.audio_tracks.title : 'не выбран';
             const maleTrack = walk.audio_tracks_2 ? walk.audio_tracks_2.title : 'не выбран';
             tracksInfo = '👩 ' + femaleTrack + ' · 👨 ' + maleTrack;
+            
+            const femaleLink = playerUrl + '?walk=' + walk.id + '&role=female';
+            const maleLink = playerUrl + '?walk=' + walk.id + '&role=male';
+            
+            menuItems = 
+                '<button class="dropdown-item" onclick="copyWalkLink(\'' + femaleLink + '\', \'' + walk.title.replace(/'/g, "\\'") + ' (она)\')">' +
+                    '<span class="dropdown-icon">👩</span> Ссылка для неё' +
+                '</button>' +
+                '<button class="dropdown-item" onclick="copyWalkLink(\'' + maleLink + '\', \'' + walk.title.replace(/'/g, "\\'") + ' (он)\')">' +
+                    '<span class="dropdown-icon">👨</span> Ссылка для него' +
+                '</button>' +
+                '<div class="dropdown-divider"></div>' +
+                '<button class="dropdown-item" onclick="editWalk(\'' + walk.id + '\')">' +
+                    '<span class="dropdown-icon">✏️</span> Редактировать' +
+                '</button>' +
+                '<button class="dropdown-item danger" onclick="deleteWalk(\'' + walk.id + '\')">' +
+                    '<span class="dropdown-icon">🗑</span> Удалить' +
+                '</button>';
         } else {
             const trackTitle = walk.audio_tracks ? walk.audio_tracks.title : 'Без трека';
-            tracksInfo = '🎵 ' + trackTitle;
+            tracksInfo = ' ' + trackTitle;
+            
+            menuItems = 
+                '<button class="dropdown-item" onclick="copyWalkLink(\'' + walkLink + '\', \'' + walk.title.replace(/'/g, "\\'") + '\')">' +
+                    '<span class="dropdown-icon">🔗</span> Копировать ссылку' +
+                '</button>' +
+                '<div class="dropdown-divider"></div>' +
+                '<button class="dropdown-item" onclick="editWalk(\'' + walk.id + '\')">' +
+                    '<span class="dropdown-icon">✏️</span> Редактировать' +
+                '</button>' +
+                '<button class="dropdown-item danger" onclick="deleteWalk(\'' + walk.id + '\')">' +
+                    '<span class="dropdown-icon">🗑</span> Удалить' +
+                '</button>';
         }
         
         return '<div class="item-card" id="walk-' + walk.id + '">' +
@@ -483,16 +515,7 @@ async function loadWalks() {
             '</div>' +
             
             '<div class="dropdown-menu" id="walk-menu-' + walk.id + '">' +
-                '<button class="dropdown-item" onclick="copyWalkLink(\'' + walkLink + '\', \'' + walk.title.replace(/'/g, "\\'") + '\')">' +
-                    '<span class="dropdown-icon">🔗</span> Копировать ссылку' +
-                '</button>' +
-                '<div class="dropdown-divider"></div>' +
-                '<button class="dropdown-item" onclick="editWalk(\'' + walk.id + '\')">' +
-                    '<span class="dropdown-icon">✏️</span> Редактировать' +
-                '</button>' +
-                '<button class="dropdown-item danger" onclick="deleteWalk(\'' + walk.id + '\')">' +
-                    '<span class="dropdown-icon"></span> Удалить' +
-                '</button>' +
+                menuItems +
             '</div>' +
         '</div>';
     }).join('');
@@ -561,7 +584,6 @@ window.saveWalk = async () => {
         return;
     }
     
-    // Показываем спиннер
     document.getElementById('walkForm').classList.add('hidden');
     document.getElementById('walkSpinner').classList.add('active');
     document.getElementById('walkModalFooter').style.display = 'none';
@@ -571,7 +593,7 @@ window.saveWalk = async () => {
         let coverUrl = null;
         
         if (selectedCoverFile) {
-            document.getElementById('walkSpinnerText').textContent = ' Загрузка обложки...';
+            document.getElementById('walkSpinnerText').textContent = '📤 Загрузка обложки...';
             
             const coverFileName = 'cover_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.jpg';
             const { error: uploadError } = await supabase.storage
