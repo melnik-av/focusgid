@@ -292,6 +292,44 @@ h1 {
     min-width: 0;
 }
 
+/* Прогресс-бар для треков */
+.track-progress-container {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.track-progress-bar {
+    flex: 1;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: height 0.2s;
+}
+
+.track-progress-bar:hover {
+    height: 6px;
+}
+
+.track-progress-fill {
+    height: 100%;
+    background: #1a1a1a;
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.1s linear;
+}
+
+.track-progress-time {
+    font-size: 11px;
+    color: #999999;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
 .dropdown-menu {
     position: absolute;
     top: 50px;
