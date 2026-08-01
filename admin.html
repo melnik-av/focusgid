@@ -478,7 +478,6 @@
         
         .modal-footer button { flex: 1; }
         
-        /* Тип прогулки */
         .walk-type-selector {
             display: flex;
             gap: 8px;
@@ -712,6 +711,15 @@
             display: none;
         }
         
+        .walk-form {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .walk-form.hidden {
+            display: none;
+        }
+        
         @media (max-width: 480px) {
             body { padding: 20px 16px; }
             h1 { font-size: 26px; }
@@ -771,63 +779,68 @@
                 <button class="modal-close" onclick="closeWalkModal()">✕</button>
             </div>
             <div class="modal-body">
-                <label class="field-label">Название прогулки *</label>
-                <input type="text" id="walkTitle" placeholder="Например: Прогулка по старому городу">
-                
-                <label class="field-label">Описание</label>
-                <textarea id="walkDescription" placeholder="Опишите прогулку..."></textarea>
-                
-                <label class="field-label">Тип прогулки *</label>
-                <div class="walk-type-selector">
-                    <div class="walk-type-option">
-                        <input type="radio" name="walkType" id="typeSolo" value="solo" checked onchange="onWalkTypeChange()">
-                        <label for="typeSolo">🚶 Соло</label>
-                    </div>
-                    <div class="walk-type-option">
-                        <input type="radio" name="walkType" id="typePair" value="pair" onchange="onWalkTypeChange()">
-                        <label for="typePair"> Парная</label>
-                    </div>
-                    <div class="walk-type-option">
-                        <input type="radio" name="walkType" id="typeGroup" value="group" onchange="onWalkTypeChange()">
-                        <label for="typeGroup">👥 Групповая</label>
-                    </div>
-                </div>
-                
-                <div class="cover-upload">
-                    <label class="field-label">Обложка прогулки</label>
-                    <div class="cover-preview" id="walkCoverPreview" onclick="document.getElementById('walkCoverFile').click()">
-                        <div class="cover-preview-placeholder">
-                            <span class="cover-icon">+</span>
-                            Нажмите чтобы добавить обложку
+                <div class="walk-form" id="walkForm">
+                    <label class="field-label">Название прогулки *</label>
+                    <input type="text" id="walkTitle" placeholder="Например: Прогулка по старому городу">
+                    
+                    <label class="field-label">Описание</label>
+                    <textarea id="walkDescription" placeholder="Опишите прогулку..."></textarea>
+                    
+                    <label class="field-label">Тип прогулки *</label>
+                    <div class="walk-type-selector">
+                        <div class="walk-type-option">
+                            <input type="radio" name="walkType" id="typeSolo" value="solo" checked onchange="onWalkTypeChange()">
+                            <label for="typeSolo">🚶 Соло</label>
+                        </div>
+                        <div class="walk-type-option">
+                            <input type="radio" name="walkType" id="typePair" value="pair" onchange="onWalkTypeChange()">
+                            <label for="typePair">💑 Парная</label>
+                        </div>
+                        <div class="walk-type-option">
+                            <input type="radio" name="walkType" id="typeGroup" value="group" onchange="onWalkTypeChange()">
+                            <label for="typeGroup"> Групповая</label>
                         </div>
                     </div>
-                    <input type="file" id="walkCoverFile" accept="image/*" style="display: none;">
-                </div>
-                
-                <!-- Одиночный трек (для Соло и Групповой) -->
-                <div class="single-track-field" id="singleTrackField">
-                    <label class="field-label">Аудиотрек</label>
-                    <select id="walkTrack">
-                        <option value="">Без трека</option>
-                    </select>
-                </div>
-                
-                <!-- Два трека для Парной -->
-                <div class="pair-tracks" id="pairTracks">
-                    <label class="field-label"> Трек для неё</label>
-                    <select id="walkTrackFemale">
-                        <option value="">Без трека</option>
-                    </select>
                     
-                    <label class="field-label">🎧 Трек для него</label>
-                    <select id="walkTrackMale">
-                        <option value="">Без трека</option>
-                    </select>
+                    <div class="cover-upload">
+                        <label class="field-label">Обложка прогулки</label>
+                        <div class="cover-preview" id="walkCoverPreview" onclick="document.getElementById('walkCoverFile').click()">
+                            <div class="cover-preview-placeholder">
+                                <span class="cover-icon">+</span>
+                                Нажмите чтобы добавить обложку
+                            </div>
+                        </div>
+                        <input type="file" id="walkCoverFile" accept="image/*" style="display: none;">
+                    </div>
+                    
+                    <div class="single-track-field" id="singleTrackField">
+                        <label class="field-label">Аудиотрек</label>
+                        <select id="walkTrack">
+                            <option value="">Без трека</option>
+                        </select>
+                    </div>
+                    
+                    <div class="pair-tracks" id="pairTracks">
+                        <label class="field-label">👩 Трек для неё</label>
+                        <select id="walkTrackFemale">
+                            <option value="">Без трека</option>
+                        </select>
+                        
+                        <label class="field-label">🎧 Трек для него</label>
+                        <select id="walkTrackMale">
+                            <option value="">Без трека</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="upload-spinner-container" id="walkSpinner">
+                    <div class="spinner"></div>
+                    <div class="spinner-text" id="walkSpinnerText">Сохранение...</div>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" id="walkModalFooter">
                 <button class="btn" onclick="closeWalkModal()">Отмена</button>
-                <button class="btn btn-primary" onclick="saveWalk()">Сохранить</button>
+                <button class="btn btn-primary" id="saveWalkBtn" onclick="saveWalk()">Сохранить</button>
             </div>
         </div>
     </div>
