@@ -5,22 +5,35 @@ let selectedCoverFile = null;
 let selectedCoverUrl = null;
 let editingWalkId = null;
 let editingTrackId = null;
+let currentUserRole = null;
+let currentAdminId = null;
+let editingUserId = null;
+
+// === ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ===
 
 window.switchTab = (tab) => {
     currentTab = tab;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     
+    const tabs = document.querySelectorAll('.tab');
+    
     if (tab === 'walks') {
-        document.querySelectorAll('.tab')[0].classList.add('active');
+        tabs[0].classList.add('active');
         document.getElementById('walksTab').classList.add('active');
         loadWalks();
-    } else {
-        document.querySelectorAll('.tab')[1].classList.add('active');
+    } else if (tab === 'tracks') {
+        tabs[1].classList.add('active');
         document.getElementById('tracksTab').classList.add('active');
         loadTracks();
+    } else if (tab === 'users') {
+        tabs[2].classList.add('active');
+        document.getElementById('usersTab').classList.add('active');
+        loadUsers();
     }
 };
+
+// === АВТОРИЗАЦИЯ ===
 
 window.login = async () => {
     const email = document.getElementById('email').value;
@@ -38,17 +51,48 @@ window.logout = async () => {
     await supabase.auth.signOut();
 };
 
-supabase.auth.onAuthStateChange((event, session) => {
+supabase.auth.onAuthStateChange(async (event, session) => {
     if (session && session.user) {
+        // Проверяем роль в таблице admins
+        const { data: admin, error } = await supabase
+            .from('admins')
+            .select('*')
+            .eq('email', session.user.email)
+            .single();
+        
+        if (error || !admin) {
+            await supabase.auth.signOut();
+            document.getElementById('loginError').textContent = '❌ У вас нет доступа к админке';
+            return;
+        }
+        
+        currentUserRole = admin.role;
+        currentAdminId = admin.id;
+        
         document.getElementById('loginForm').classList.add('hidden');
         document.getElementById('adminPanel').classList.remove('hidden');
-        document.getElementById('userEmail').textContent = session.user.email;
+        
+        const roleLabel = admin.role === 'super_admin' ? 'Супер-админ' : 'Админ';
+        document.getElementById('userEmail').textContent = session.user.email + ' (' + roleLabel + ')';
+        
+        // Показываем вкладку пользователей только супер-админу
+        const usersTabBtn = document.getElementById('usersTabBtn');
+        if (currentUserRole === 'super_admin') {
+            usersTabBtn.style.display = 'block';
+        } else {
+            usersTabBtn.style.display = 'none';
+        }
+        
         loadWalks();
     } else {
         document.getElementById('loginForm').classList.remove('hidden');
         document.getElementById('adminPanel').classList.add('hidden');
+        currentUserRole = null;
+        currentAdminId = null;
     }
 });
+
+// === ОБЛОЖКА ===
 
 function renderCoverPreview(imageUrl, showDelete) {
     const container = document.getElementById('walkCoverPreview');
@@ -85,6 +129,8 @@ document.getElementById('walkCoverFile').addEventListener('change', (e) => {
     }
 });
 
+// === ТИП ПРОГУЛКИ ===
+
 window.onWalkTypeChange = () => {
     const type = document.querySelector('input[name="walkType"]:checked').value;
     const singleField = document.getElementById('singleTrackField');
@@ -111,6 +157,8 @@ function setWalkType(type) {
     }
 }
 
+// === МЕНЮ ===
+
 function closeAllWalkMenus() {
     document.querySelectorAll('.dropdown-menu').forEach(menu => {
         menu.classList.remove('active');
@@ -123,9 +171,18 @@ function closeAllTrackMenus() {
     });
 }
 
+function closeAllUserMenus() {
+    document.querySelectorAll('.track-dropdown-menu').forEach(menu => {
+        if (menu.id && menu.id.startsWith('user-menu-')) {
+            menu.classList.remove('active');
+        }
+    });
+}
+
 function closeAllMenus() {
     closeAllWalkMenus();
     closeAllTrackMenus();
+    closeAllUserMenus();
     const overlay = document.getElementById('menuOverlay');
     if (overlay) overlay.classList.remove('active');
 }
@@ -147,6 +204,21 @@ window.toggleWalkMenu = (id) => {
 
 window.toggleTrackMenu = (id) => {
     const menu = document.getElementById('track-menu-' + id);
+    const overlay = document.getElementById('menuOverlay');
+    
+    if (menu.classList.contains('active')) {
+        closeAllMenus();
+        return;
+    }
+    
+    closeAllMenus();
+    
+    menu.classList.add('active');
+    if (overlay) overlay.classList.add('active');
+};
+
+window.toggleUserMenu = (id) => {
+    const menu = document.getElementById('user-menu-' + id);
     const overlay = document.getElementById('menuOverlay');
     
     if (menu.classList.contains('active')) {
@@ -188,6 +260,8 @@ window.copyWalkLink = async (link, title) => {
         alert('Ссылка скопирована!');
     }
 };
+
+// === АУДИОТРЕКИ ===
 
 async function loadTracks() {
     closeAllMenus();
@@ -407,6 +481,8 @@ window.deleteTrack = async (id) => {
     }
 };
 
+// === ПРОГУЛКИ ===
+
 async function loadWalks() {
     closeAllMenus();
     
@@ -448,18 +524,17 @@ async function loadWalks() {
         let tracksInfo = '';
         let menuItems = '';
         
-        // Проверяем тип прогулки
         if (walkType === 'pair') {
             const femaleTrack = walk.audio_tracks ? walk.audio_tracks.title : 'не выбран';
             const maleTrack = walk.audio_tracks_2 ? walk.audio_tracks_2.title : 'не выбран';
-            tracksInfo = '👩 ' + femaleTrack + ' ·  ' + maleTrack;
+            tracksInfo = ' ' + femaleTrack + ' · 👨 ' + maleTrack;
             
             const femaleLink = playerUrl + '?walk=' + walk.id + '&role=female';
             const maleLink = playerUrl + '?walk=' + walk.id + '&role=male';
             
             menuItems = 
                 '<button class="dropdown-item" onclick="copyWalkLink(\'' + femaleLink + '\', \'' + walk.title.replace(/'/g, "\\'") + ' (она)\')">' +
-                    '<span class="dropdown-icon">👩</span> Ссылка для неё' +
+                    '<span class="dropdown-icon"></span> Ссылка для неё' +
                 '</button>' +
                 '<button class="dropdown-item" onclick="copyWalkLink(\'' + maleLink + '\', \'' + walk.title.replace(/'/g, "\\'") + ' (он)\')">' +
                     '<span class="dropdown-icon"></span> Ссылка для него' +
@@ -581,7 +656,7 @@ window.saveWalk = async () => {
         let coverUrl = null;
         
         if (selectedCoverFile) {
-            document.getElementById('walkSpinnerText').textContent = ' Загрузка обложки...';
+            document.getElementById('walkSpinnerText').textContent = '📤 Загрузка обложки...';
             
             const coverFileName = 'cover_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.jpg';
             const { error: uploadError } = await supabase.storage
@@ -714,6 +789,285 @@ window.deleteWalk = async (id) => {
         alert('Ошибка: ' + error.message);
     } else {
         loadWalks();
+    }
+};
+
+// === ПОЛЬЗОВАТЕЛИ ===
+
+async function loadUsers() {
+    if (currentUserRole !== 'super_admin') {
+        return;
+    }
+    
+    closeAllMenus();
+    
+    const { data: users, error } = await supabase
+        .from('admins')
+        .select('*')
+        .order('created_at', { ascending: false });
+    
+    if (error) {
+        console.error('Ошибка загрузки пользователей:', error);
+        return;
+    }
+    
+    const list = document.getElementById('usersList');
+    if (!users || users.length === 0) {
+        list.innerHTML = '<div style="color: #999999; text-align: center; padding: 40px;">Нет пользователей</div>';
+        return;
+    }
+    
+    const dotsIcon = '<svg width="16" height="4" viewBox="0 0 16 4"><circle cx="2" cy="2" r="2" fill="#666666"/><circle cx="8" cy="2" r="2" fill="#666666"/><circle cx="14" cy="2" r="2" fill="#666666"/></svg>';
+    
+    const roleLabels = {
+        'super_admin': { text: 'Супер-админ', class: 'type-pair' },
+        'admin': { text: 'Админ', class: 'type-solo' }
+    };
+    
+    // Получаем email текущего пользователя из отображаемого текста
+    const currentEmail = document.getElementById('userEmail').textContent.split(' ')[0];
+    
+    list.innerHTML = users.map(user => {
+        const roleInfo = roleLabels[user.role] || roleLabels['admin'];
+        const isCurrentUser = user.email === currentEmail;
+        
+        let menuContent = '';
+        
+        if (isCurrentUser) {
+            menuContent = '<div class="current-user-marker">Это вы</div>';
+        } else {
+            menuContent = 
+                '<button class="track-dropdown-item" onclick="editUser(\'' + user.id + '\', \'' + user.last_name.replace(/'/g, "\\'") + '\', \'' + user.first_name.replace(/'/g, "\\'") + '\', \'' + user.email.replace(/'/g, "\\'") + '\', \'' + user.role + '\')">' +
+                    '<span>✏️</span> Редактировать' +
+                '</button>' +
+                '<button class="track-dropdown-item danger" onclick="deleteUser(\'' + user.id + '\', \'' + user.email.replace(/'/g, "\\'") + '\')">' +
+                    '<span>🗑</span> Удалить' +
+                '</button>';
+        }
+        
+        return '<div class="item-card" id="user-' + user.id + '">' +
+            '<div class="item-header" style="align-items: center;">' +
+                '<div class="item-info">' +
+                    '<h3 class="item-title" style="margin: 0;">' + user.last_name + ' ' + user.first_name + '</h3>' +
+                    '<div class="item-meta" style="margin-top: 4px;">' + user.email + '</div>' +
+                '</div>' +
+                '<div style="display: flex; align-items: center; gap: 12px;">' +
+                    '<span class="type-badge ' + roleInfo.class + '">' + roleInfo.text + '</span>' +
+                    '<button class="track-menu-button" onclick="toggleUserMenu(\'' + user.id + '\')" title="Меню">' + dotsIcon + '</button>' +
+                '</div>' +
+            '</div>' +
+            
+            '<div class="track-dropdown-menu" id="user-menu-' + user.id + '">' +
+                menuContent +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+window.openUserModal = () => {
+    editingUserId = null;
+    document.getElementById('userModalTitle').textContent = 'Добавить админа';
+    document.getElementById('userLastName').value = '';
+    document.getElementById('userFirstName').value = '';
+    document.getElementById('userEmailInput').value = '';
+    document.getElementById('userPassword').value = '';
+    document.getElementById('roleAdmin').checked = true;
+    
+    // Показываем опцию супер-админа только супер-админу
+    document.getElementById('superAdminOption').style.display = 
+        currentUserRole === 'super_admin' ? 'block' : 'none';
+    
+    document.getElementById('userForm').classList.remove('hidden');
+    document.getElementById('userSpinner').classList.remove('active');
+    document.getElementById('userModalFooter').style.display = 'flex';
+    document.getElementById('saveUserBtn').disabled = false;
+    document.getElementById('userSpinnerText').style.color = '#666666';
+    
+    document.getElementById('userModal').classList.add('active');
+};
+
+window.closeUserModal = () => {
+    document.getElementById('userModal').classList.remove('active');
+    editingUserId = null;
+};
+
+window.editUser = (id, lastName, firstName, email, role) => {
+    closeAllMenus();
+    editingUserId = id;
+    
+    document.getElementById('userModalTitle').textContent = 'Редактировать админа';
+    document.getElementById('userLastName').value = lastName;
+    document.getElementById('userFirstName').value = firstName;
+    document.getElementById('userEmailInput').value = email;
+    document.getElementById('userPassword').value = '';
+    
+    if (role === 'super_admin') {
+        document.getElementById('roleSuperAdmin').checked = true;
+    } else {
+        document.getElementById('roleAdmin').checked = true;
+    }
+    
+    document.getElementById('superAdminOption').style.display = 
+        currentUserRole === 'super_admin' ? 'block' : 'none';
+    
+    document.getElementById('userForm').classList.remove('hidden');
+    document.getElementById('userSpinner').classList.remove('active');
+    document.getElementById('userModalFooter').style.display = 'flex';
+    document.getElementById('saveUserBtn').disabled = false;
+    
+    document.getElementById('userModal').classList.add('active');
+};
+
+window.saveUser = async () => {
+    const lastName = document.getElementById('userLastName').value.trim();
+    const firstName = document.getElementById('userFirstName').value.trim();
+    const email = document.getElementById('userEmailInput').value.trim();
+    const password = document.getElementById('userPassword').value;
+    const role = document.querySelector('input[name="userRole"]:checked').value;
+    
+    if (!lastName || !firstName || !email) {
+        alert('Заполните все обязательные поля');
+        return;
+    }
+    
+    if (!editingUserId && !password) {
+        alert('Введите пароль для нового пользователя');
+        return;
+    }
+    
+    if (password && password.length < 6) {
+        alert('Пароль должен содержать минимум 6 символов');
+        return;
+    }
+    
+    // Показываем спиннер
+    document.getElementById('userForm').classList.add('hidden');
+    document.getElementById('userSpinner').classList.add('active');
+    document.getElementById('userModalFooter').style.display = 'none';
+    document.getElementById('saveUserBtn').disabled = true;
+    
+    try {
+        if (editingUserId) {
+            // Редактирование
+            document.getElementById('userSpinnerText').textContent = '💾 Обновление данных...';
+            
+            // Обновляем email и пароль в auth.users если изменился
+            if (password) {
+                const { error: authError } = await supabase.auth.admin.updateUserById(
+                    editingUserId,
+                    { email: email, password: password }
+                );
+                if (authError) throw authError;
+            } else {
+                // Только email
+                const { error: authError } = await supabase.auth.admin.updateUserById(
+                    editingUserId,
+                    { email: email }
+                );
+                if (authError) throw authError;
+            }
+            
+            const { error } = await supabase
+                .from('admins')
+                .update({
+                    first_name: firstName,
+                    last_name: lastName,
+                    email: email,
+                    role: role
+                })
+                .eq('id', editingUserId);
+            
+            if (error) throw error;
+            
+        } else {
+            // Создание нового пользователя
+            document.getElementById('userSpinnerText').textContent = '👤 Создание аккаунта...';
+            
+            // Создаём пользователя в Supabase Auth
+            const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+                email: email,
+                password: password,
+                email_confirm: true
+            });
+            
+            if (authError) throw authError;
+            
+            document.getElementById('userSpinnerText').textContent = '💾 Сохранение в базе...';
+            
+            // Добавляем запись в admins
+            const { error } = await supabase
+                .from('admins')
+                .insert({
+                    user_id: authData.user.id,
+                    first_name: firstName,
+                    last_name: lastName,
+                    email: email,
+                    role: role
+                });
+            
+            if (error) {
+                // Откатываем создание пользователя в auth
+                await supabase.auth.admin.deleteUser(authData.user.id);
+                throw error;
+            }
+        }
+        
+        document.getElementById('userSpinnerText').textContent = '✅ Сохранено!';
+        document.getElementById('userSpinnerText').style.color = '#2e7d32';
+        
+        setTimeout(() => {
+            closeUserModal();
+            loadUsers();
+        }, 1000);
+        
+    } catch (e) {
+        console.error('Ошибка сохранения пользователя:', e);
+        document.getElementById('userSpinnerText').textContent = '❌ Ошибка: ' + e.message;
+        document.getElementById('userSpinnerText').style.color = '#e94560';
+        
+        setTimeout(() => {
+            document.getElementById('userForm').classList.remove('hidden');
+            document.getElementById('userSpinner').classList.remove('active');
+            document.getElementById('userModalFooter').style.display = 'flex';
+            document.getElementById('saveUserBtn').disabled = false;
+            document.getElementById('userSpinnerText').style.color = '#666666';
+        }, 2000);
+    }
+};
+
+window.deleteUser = async (id, email) => {
+    closeAllMenus();
+    
+    if (!confirm('Удалить пользователя ' + email + '?\n\nПользователь потеряет доступ к админке.')) {
+        return;
+    }
+    
+    try {
+        // Получаем user_id для удаления из auth
+        const { data: user } = await supabase
+            .from('admins')
+            .select('user_id')
+            .eq('id', id)
+            .single();
+        
+        // Удаляем из admins
+        const { error } = await supabase
+            .from('admins')
+            .delete()
+            .eq('id', id);
+        
+        if (error) throw error;
+        
+        // Удаляем из auth.users
+        if (user && user.user_id) {
+            await supabase.auth.admin.deleteUser(user.user_id);
+        }
+        
+        loadUsers();
+        
+    } catch (e) {
+        alert('Ошибка: ' + e.message);
+        console.error(e);
     }
 };
 
