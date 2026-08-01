@@ -272,7 +272,7 @@ async function loadWalks() {
         const trackTitle = walk.audio_tracks ? walk.audio_tracks.title : 'Без трека';
         const coverHtml = walk.cover_url 
             ? '<img src="' + walk.cover_url + '" alt="' + walk.title + '">'
-            : '<div class="item-cover-placeholder"></div>';
+            : '<div class="item-cover-placeholder">🚶</div>';
         
         const walkLink = playerUrl + '?track=' + walk.id;
         
@@ -282,7 +282,7 @@ async function loadWalks() {
                 '<div class="item-info">' +
                     '<h3 class="item-title">' + walk.title + '</h3>' +
                     (walk.description ? '<div class="item-description">' + walk.description + '</div>' : '') +
-                    '<div class="item-meta"> ' + trackTitle + '</div>' +
+                    '<div class="item-meta">🎵 ' + trackTitle + '</div>' +
                 '</div>' +
                 '<button class="menu-button" onclick="toggleWalkMenu(\'' + walk.id + '\')" title="Меню">' + dotsIcon + '</button>' +
             '</div>' +
@@ -293,7 +293,7 @@ async function loadWalks() {
                 '</button>' +
                 '<div class="dropdown-divider"></div>' +
                 '<button class="dropdown-item" onclick="editWalk(\'' + walk.id + '\')">' +
-                    '<span class="dropdown-icon">️</span> Редактировать' +
+                    '<span class="dropdown-icon">✏️</span> Редактировать' +
                 '</button>' +
                 '<button class="dropdown-item danger" onclick="deleteWalk(\'' + walk.id + '\')">' +
                     '<span class="dropdown-icon">🗑</span> Удалить' +
@@ -461,10 +461,22 @@ window.openTrackModal = () => {
     document.getElementById('trackModal').classList.add('active');
     document.getElementById('trackTitle').value = '';
     document.getElementById('trackFile').value = '';
+    
+    // Сброс спиннера
+    document.getElementById('uploadForm').classList.remove('hidden');
+    document.getElementById('uploadSpinner').classList.remove('active');
+    document.getElementById('trackModalFooter').style.display = 'flex';
+    document.getElementById('saveTrackBtn').disabled = false;
 };
 
 window.closeTrackModal = () => {
     document.getElementById('trackModal').classList.remove('active');
+    
+    // Сброс спиннера
+    document.getElementById('uploadForm').classList.remove('hidden');
+    document.getElementById('uploadSpinner').classList.remove('active');
+    document.getElementById('trackModalFooter').style.display = 'flex';
+    document.getElementById('saveTrackBtn').disabled = false;
 };
 
 window.saveTrack = async () => {
@@ -476,7 +488,14 @@ window.saveTrack = async () => {
         return;
     }
     
+    // Показываем спиннер
+    document.getElementById('uploadForm').classList.add('hidden');
+    document.getElementById('uploadSpinner').classList.add('active');
+    document.getElementById('trackModalFooter').style.display = 'none';
+    
     try {
+        document.getElementById('spinnerText').textContent = '⏳ Загрузка файла...';
+        
         const fileName = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '');
         
         const { error: uploadError } = await supabase.storage
@@ -489,34 +508,76 @@ window.saveTrack = async () => {
             .from('tracks')
             .getPublicUrl(fileName);
         
-        const audio = new Audio(publicUrl);
-        const duration = await new Promise((resolve) => {
-            const timeout = setTimeout(() => resolve(0), 10000);
-            audio.addEventListener('loadedmetadata', () => {
-                clearTimeout(timeout);
-                resolve(audio.duration);
+        document.getElementById('spinnerText').textContent = '⏱️ Определение длительности...';
+        
+        // Определение длительности (неблокирующее)
+        let duration = null;
+        try {
+            const audio = new Audio(publicUrl);
+            audio.preload = 'metadata';
+            
+            duration = await new Promise((resolve) => {
+                let resolved = false;
+                const timeout = setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        resolve(null);
+                    }
+                }, 5000);
+                
+                audio.addEventListener('loadedmetadata', () => {
+                    if (!resolved) {
+                        resolved = true;
+                        clearTimeout(timeout);
+                        resolve(audio.duration);
+                    }
+                });
+                
+                audio.addEventListener('error', () => {
+                    if (!resolved) {
+                        resolved = true;
+                        clearTimeout(timeout);
+                        resolve(null);
+                    }
+                });
+                
+                audio.src = publicUrl + '?t=' + Date.now();
             });
-            audio.addEventListener('error', () => {
-                clearTimeout(timeout);
-                resolve(0);
-            });
-        });
+        } catch (e) {
+            console.warn('Не удалось определить длительность:', e);
+            duration = null;
+        }
+        
+        document.getElementById('spinnerText').textContent = '💾 Сохранение в базе...';
         
         const { error } = await supabase
             .from('audio_tracks')
             .insert({
                 title,
                 file_url: publicUrl,
-                duration: duration > 0 ? Math.round(duration) : null
+                duration: duration ? Math.round(duration) : null
             });
         
         if (error) throw error;
         
-        closeTrackModal();
-        loadTracks();
+        document.getElementById('spinnerText').textContent = '✅ Трек загружен!';
+        
+        setTimeout(() => {
+            closeTrackModal();
+            loadTracks();
+        }, 1000);
         
     } catch (e) {
-        alert('Ошибка: ' + e.message);
+        console.error('Ошибка загрузки трека:', e);
+        document.getElementById('spinnerText').textContent = '❌ Ошибка: ' + e.message;
+        document.getElementById('spinnerText').style.color = '#e94560';
+        
+        setTimeout(() => {
+            document.getElementById('uploadForm').classList.remove('hidden');
+            document.getElementById('uploadSpinner').classList.remove('active');
+            document.getElementById('trackModalFooter').style.display = 'flex';
+            document.getElementById('spinnerText').style.color = '#666666';
+        }, 2000);
     }
 };
 
