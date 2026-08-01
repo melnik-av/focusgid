@@ -89,7 +89,6 @@ function updateProgress() {
 async function loadWalkData(walkId, role) {
     console.log('📥 Загрузка прогулки:', walkId, 'role:', role);
     
-    // Получаем прогулку с связанными треками
     const { data: walk, error } = await supabase
         .from('walks')
         .select(`
@@ -98,20 +97,18 @@ async function loadWalkData(walkId, role) {
             audio_tracks_2:audio_tracks!audio_track_id_2(*)
         `)
         .eq('id', walkId)
-        .eq('active', true)
         .single();
     
     if (error || !walk) {
         console.error('Ошибка загрузки прогулки:', error);
-        throw new Error('Прогулка не найдена или недоступна');
+        throw new Error('Трек не найден или недоступен');
     }
     
-    console.log('✅ Прогулка загружена:', walk.title);
+    console.log('✅ Прогулка загружена:', walk.title, 'type:', walk.type);
     
     // Определяем какой трек использовать
     let track = null;
     if (walk.type === 'pair' && role) {
-        // Парная прогулка — выбираем трек по роли
         if (role === 'male') {
             track = walk.audio_tracks_2;
             console.log('🎧 Выбран мужской трек:', track?.title);
@@ -120,7 +117,6 @@ async function loadWalkData(walkId, role) {
             console.log('🎧 Выбран женский трек:', track?.title);
         }
     } else {
-        // Соло или групповая — один трек
         track = walk.audio_tracks;
         console.log('🎧 Выбран трек:', track?.title);
     }
@@ -132,11 +128,8 @@ async function loadWalkData(walkId, role) {
     return { walk, track };
 }
 
-async function loadTrack(trackId = null) {
+async function loadWalk(walkId, role) {
     try {
-        // Поддержка старого параметра track (для обратной совместимости)
-        let walkId = trackId;
-        
         if (!walkId) {
             showError('Трек не найден или недоступен');
             return;
@@ -144,44 +137,8 @@ async function loadTrack(trackId = null) {
         
         showLoadingSpinner();
         
-        const { walk, track } = await loadWalkData(walkId, null);
-        
-        // Отображаем данные
-        trackTitle.textContent = walk.title || 'Аудиопрогулка';
-        
-        if (walk.description && walk.description.trim()) {
-            trackDescription.textContent = walk.description;
-            trackDescription.classList.remove('hidden');
-        } else {
-            trackDescription.classList.add('hidden');
-        }
-        
-        if (walk.cover_url) {
-            coverContainer.innerHTML = `<img src="${walk.cover_url}" alt="${walk.title}">`;
-        }
-        
-        currentTrackId = track.id;
-        
-        await loadAudio(track.file_url);
-        
-    } catch (error) {
-        console.error('Ошибка загрузки трека:', error);
-        showError(error.message || 'Трек не найден или недоступен');
-    }
-}
-
-async function loadWalk(walkId, role) {
-    try {
-        if (!walkId) {
-            showError('Прогулка не найдена');
-            return;
-        }
-        
-        showLoadingSpinner();
-        
         const { walk, track } = await loadWalkData(walkId, role);
         
-        // Отображаем данные
         trackTitle.textContent = walk.title || 'Аудиопрогулка';
         
         if (walk.description && walk.description.trim()) {
@@ -192,7 +149,9 @@ async function loadWalk(walkId, role) {
         }
         
         if (walk.cover_url) {
-            coverContainer.innerHTML = `<img src="${walk.cover_url}" alt="${walk.title}">`;
+            coverContainer.innerHTML = '<img src="' + walk.cover_url + '" alt="' + walk.title + '">';
+        } else {
+            coverContainer.innerHTML = '<div class="cover-placeholder">🎧</div>';
         }
         
         currentTrackId = track.id;
@@ -232,9 +191,9 @@ async function loadAudio(fileUrl) {
             console.error('❌ Ошибка аудио:', e);
             
             let msg = 'Ошибка загрузки аудио';
-            if (audio.error?.code === 1) msg = 'Ошибка сети';
-            else if (audio.error?.code === 2) msg = 'Файл повреждён';
-            else if (audio.error?.code === 4) msg = 'Формат не поддерживается';
+            if (audio.error && audio.error.code === 1) msg = 'Ошибка сети';
+            else if (audio.error && audio.error.code === 2) msg = 'Файл повреждён';
+            else if (audio.error && audio.error.code === 4) msg = 'Формат не поддерживается';
             
             showError(msg);
         });
@@ -263,7 +222,7 @@ async function activateByKey(key) {
             .single();
         
         if (error || !purchase) {
-            showKeyForm(' Неверный ключ доступа');
+            showKeyForm('❌ Неверный ключ доступа');
             return;
         }
         
@@ -279,11 +238,10 @@ async function activateByKey(key) {
         const walk = purchase.walks;
         const role = purchase.role || null;
         
-        // Определяем трек
         let track = null;
-        if (walk.type === 'pair' && role) {
+        if (walk && walk.type === 'pair' && role) {
             track = role === 'male' ? walk.audio_tracks_2 : walk.audio_tracks;
-        } else {
+        } else if (walk) {
             track = walk.audio_tracks;
         }
         
@@ -300,7 +258,9 @@ async function activateByKey(key) {
         }
         
         if (walk.cover_url) {
-            coverContainer.innerHTML = `<img src="${walk.cover_url}" alt="${walk.title}">`;
+            coverContainer.innerHTML = '<img src="' + walk.cover_url + '" alt="' + walk.title + '">';
+        } else {
+            coverContainer.innerHTML = '<div class="cover-placeholder">🎧</div>';
         }
         
         currentTrackId = track.id;
@@ -367,9 +327,8 @@ keyInput.addEventListener('keypress', (e) => {
 async function init() {
     const params = new URLSearchParams(window.location.search);
     
-    // Поддержка обоих параметров: walk (новый) и track (старый)
     const walkId = params.get('walk') || params.get('track');
-    const role = params.get('role'); // female или male для парных
+    const role = params.get('role');
     const accessKey = params.get('key') || localStorage.getItem('accessKey');
     
     console.log('Walk ID:', walkId);
@@ -379,20 +338,7 @@ async function init() {
     if (accessKey) {
         await activateByKey(accessKey);
     } else if (walkId) {
-        // Проверяем, является ли это ID прогулки или трека
-        // Сначала пробуем как прогулку
-        const { data: walk } = await supabase
-            .from('walks')
-            .select('id')
-            .eq('id', walkId)
-            .single();
-        
-        if (walk) {
-            await loadWalk(walkId, role);
-        } else {
-            // Если не прогулка — пробуем как старый трек
-            await loadTrack(walkId);
-        }
+        await loadWalk(walkId, role);
     } else {
         showKeyForm('Введите ключ доступа для прослушивания');
     }
