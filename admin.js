@@ -454,11 +454,10 @@ async function loadWalks() {
         const typeInfo = typeLabels[walk.type] || typeLabels['solo'];
         const coverHtml = walk.cover_url 
             ? '<img src="' + walk.cover_url + '" alt="' + walk.title + '">'
-            : '<div class="item-cover-placeholder"></div>';
+            : '<div class="item-cover-placeholder">🚶</div>';
         
         const walkLink = playerUrl + '?track=' + walk.id;
         
-        // Формируем информацию о треках
         let tracksInfo = '';
         if (walk.type === 'pair') {
             const femaleTrack = walk.audio_tracks ? walk.audio_tracks.title : 'не выбран';
@@ -516,6 +515,14 @@ async function loadTracksToSelect(selectId) {
     select.value = currentValue;
 }
 
+function resetWalkSpinner() {
+    document.getElementById('walkForm').classList.remove('hidden');
+    document.getElementById('walkSpinner').classList.remove('active');
+    document.getElementById('walkModalFooter').style.display = 'flex';
+    document.getElementById('saveWalkBtn').disabled = false;
+    document.getElementById('walkSpinnerText').style.color = '#666666';
+}
+
 window.openWalkModal = async () => {
     editingWalkId = null;
     document.getElementById('walkModalTitle').textContent = 'Добавить прогулку';
@@ -526,7 +533,6 @@ window.openWalkModal = async () => {
     document.getElementById('walkCoverFile').value = '';
     renderCoverPreview(null, false);
     
-    // Сброс типа на Соло
     document.getElementById('typeSolo').checked = true;
     onWalkTypeChange();
     
@@ -534,12 +540,15 @@ window.openWalkModal = async () => {
     await loadTracksToSelect('walkTrackFemale');
     await loadTracksToSelect('walkTrackMale');
     
+    resetWalkSpinner();
+    
     document.getElementById('walkModal').classList.add('active');
 };
 
 window.closeWalkModal = () => {
     document.getElementById('walkModal').classList.remove('active');
     editingWalkId = null;
+    resetWalkSpinner();
 };
 
 window.saveWalk = async () => {
@@ -552,10 +561,18 @@ window.saveWalk = async () => {
         return;
     }
     
+    // Показываем спиннер
+    document.getElementById('walkForm').classList.add('hidden');
+    document.getElementById('walkSpinner').classList.add('active');
+    document.getElementById('walkModalFooter').style.display = 'none';
+    document.getElementById('saveWalkBtn').disabled = true;
+    
     try {
         let coverUrl = null;
         
         if (selectedCoverFile) {
+            document.getElementById('walkSpinnerText').textContent = ' Загрузка обложки...';
+            
             const coverFileName = 'cover_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.jpg';
             const { error: uploadError } = await supabase.storage
                 .from('covers')
@@ -573,6 +590,8 @@ window.saveWalk = async () => {
             coverUrl = publicUrl;
         }
         
+        document.getElementById('walkSpinnerText').textContent = '💾 Сохранение в базе...';
+        
         const walkData = {
             title,
             description: description || null,
@@ -580,11 +599,9 @@ window.saveWalk = async () => {
         };
         
         if (type === 'pair') {
-            // Парная прогулка — два трека
             walkData.audio_track_id = document.getElementById('walkTrackFemale').value || null;
             walkData.audio_track_id_2 = document.getElementById('walkTrackMale').value || null;
         } else {
-            // Соло или Групповая — один трек
             walkData.audio_track_id = document.getElementById('walkTrack').value || null;
             walkData.audio_track_id_2 = null;
         }
@@ -608,12 +625,22 @@ window.saveWalk = async () => {
             if (error) throw error;
         }
         
-        closeWalkModal();
-        loadWalks();
+        document.getElementById('walkSpinnerText').textContent = '✅ Сохранено!';
+        document.getElementById('walkSpinnerText').style.color = '#2e7d32';
+        
+        setTimeout(() => {
+            closeWalkModal();
+            loadWalks();
+        }, 1000);
         
     } catch (e) {
-        alert('Ошибка: ' + e.message);
-        console.error(e);
+        console.error('Ошибка сохранения прогулки:', e);
+        document.getElementById('walkSpinnerText').textContent = '❌ Ошибка: ' + e.message;
+        document.getElementById('walkSpinnerText').style.color = '#e94560';
+        
+        setTimeout(() => {
+            resetWalkSpinner();
+        }, 2000);
     }
 };
 
@@ -636,15 +663,12 @@ window.editWalk = async (id) => {
     document.getElementById('walkTitle').value = walk.title || '';
     document.getElementById('walkDescription').value = walk.description || '';
     
-    // Устанавливаем тип
     setWalkType(walk.type || 'solo');
     
-    // Загружаем списки треков
     await loadTracksToSelect('walkTrack');
     await loadTracksToSelect('walkTrackFemale');
     await loadTracksToSelect('walkTrackMale');
     
-    // Устанавливаем выбранные треки
     if (walk.type === 'pair') {
         document.getElementById('walkTrackFemale').value = walk.audio_track_id || '';
         document.getElementById('walkTrackMale').value = walk.audio_track_id_2 || '';
@@ -652,7 +676,6 @@ window.editWalk = async (id) => {
         document.getElementById('walkTrack').value = walk.audio_track_id || '';
     }
     
-    // Загружаем обложку
     if (walk.cover_url) {
         selectedCoverFile = null;
         selectedCoverUrl = walk.cover_url;
@@ -662,6 +685,8 @@ window.editWalk = async (id) => {
         selectedCoverUrl = null;
         renderCoverPreview(null, false);
     }
+    
+    resetWalkSpinner();
     
     document.getElementById('walkModal').classList.add('active');
 };
