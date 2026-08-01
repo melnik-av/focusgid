@@ -29,6 +29,7 @@
             gap: 8px;
             margin-bottom: 30px;
             border-bottom: 2px solid #e0e0e0;
+            flex-wrap: wrap;
         }
         
         .tab {
@@ -720,6 +721,13 @@
             display: none;
         }
         
+        .current-user-marker {
+            padding: 12px 16px;
+            font-size: 13px;
+            color: #999999;
+            font-style: italic;
+        }
+        
         @media (max-width: 480px) {
             body { padding: 20px 16px; }
             h1 { font-size: 26px; }
@@ -757,6 +765,7 @@
         <div class="tabs">
             <button class="tab active" onclick="switchTab('walks')">🚶 Прогулки</button>
             <button class="tab" onclick="switchTab('tracks')">🎵 Аудиотреки</button>
+            <button class="tab" onclick="switchTab('users')" id="usersTabBtn" style="display: none;">👥 Пользователи</button>
         </div>
         
         <div id="walksTab" class="tab-content active">
@@ -767,6 +776,11 @@
         <div id="tracksTab" class="tab-content">
             <button class="add-btn" onclick="openTrackModal()">+ Загрузить трек</button>
             <div id="tracksList" class="item-list"></div>
+        </div>
+        
+        <div id="usersTab" class="tab-content">
+            <button class="add-btn" onclick="openUserModal()" id="addUserBtn">+ Добавить админа</button>
+            <div id="usersList" class="item-list"></div>
         </div>
     </div>
     
@@ -885,6 +899,54 @@
             <div class="modal-footer">
                 <button class="btn" onclick="closeEditTrackModal()">Отмена</button>
                 <button class="btn btn-primary" onclick="saveTrackName()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="userModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="userModalTitle">Добавить админа</h2>
+                <button class="modal-close" onclick="closeUserModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="walk-form" id="userForm">
+                    <label class="field-label">Фамилия *</label>
+                    <input type="text" id="userLastName" placeholder="Иванов">
+                    
+                    <label class="field-label">Имя *</label>
+                    <input type="text" id="userFirstName" placeholder="Иван">
+                    
+                    <label class="field-label">Email *</label>
+                    <input type="email" id="userEmailInput" placeholder="ivan@example.com">
+                    
+                    <label class="field-label">Роль *</label>
+                    <div class="walk-type-selector">
+                        <div class="walk-type-option">
+                            <input type="radio" name="userRole" id="roleAdmin" value="admin" checked>
+                            <label for="roleAdmin">Админ</label>
+                        </div>
+                        <div class="walk-type-option" id="superAdminOption" style="display: none;">
+                            <input type="radio" name="userRole" id="roleSuperAdmin" value="super_admin">
+                            <label for="roleSuperAdmin">Супер-админ</label>
+                        </div>
+                    </div>
+                    
+                    <label class="field-label">Пароль *</label>
+                    <input type="password" id="userPassword" placeholder="Минимум 6 символов">
+                    <div style="font-size: 12px; color: #999999; margin-top: -10px; margin-bottom: 16px;">
+                        Пароль нужен для входа в админку
+                    </div>
+                </div>
+                
+                <div class="upload-spinner-container" id="userSpinner">
+                    <div class="spinner"></div>
+                    <div class="spinner-text" id="userSpinnerText">Сохранение...</div>
+                </div>
+            </div>
+            <div class="modal-footer" id="userModalFooter">
+                <button class="btn" onclick="closeUserModal()">Отмена</button>
+                <button class="btn btn-primary" id="saveUserBtn" onclick="saveUser()">Сохранить</button>
             </div>
         </div>
     </div>
