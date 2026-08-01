@@ -258,6 +258,48 @@
             display: block;
         }
         
+        /* Кнопка play для превью трека */
+        .track-play-btn {
+            width: 32px;
+            height: 32px;
+            background: #1a1a1a;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        
+        .track-play-btn:hover {
+            background: #333333;
+            transform: scale(1.05);
+        }
+        
+        .track-play-btn.playing {
+            background: #e94560;
+        }
+        
+        .track-play-btn.playing:hover {
+            background: #d63851;
+        }
+        
+        .track-play-btn svg {
+            display: block;
+        }
+        
+        .track-play-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+        
         .dropdown-menu {
             position: absolute;
             top: 50px;
