@@ -66,7 +66,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         
         if (error || !admin) {
             await supabase.auth.signOut();
-            document.getElementById('loginError').textContent = ' У вас нет доступа к админке';
+            document.getElementById('loginError').textContent = '❌ У вас нет доступа к админке';
             return;
         }
         
@@ -319,7 +319,6 @@ async function loadTracks() {
     }).join('');
 }
 
-// Управление воспроизведением превью
 window.toggleTrackPreview = async (trackId, fileUrl) => {
     const playBtn = document.getElementById('play-btn-' + trackId);
     
@@ -516,7 +515,7 @@ window.saveTrack = async () => {
         
     } catch (e) {
         console.error('Ошибка загрузки трека:', e);
-        document.getElementById('spinnerText').textContent = '❌ Ошибка: ' + e.message;
+        document.getElementById('spinnerText').textContent = ' Ошибка: ' + e.message;
         document.getElementById('spinnerText').style.color = '#e94560';
         
         setTimeout(() => {
@@ -567,7 +566,7 @@ async function loadWalks() {
     
     const playerUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
     
-    const dotsIcon = '<svg width="20" height="4" viewBox="0 0 20 4"><circle cx="2" cy="2" r="2" fill="#1a1a1a"/><circle cx="10" cy="2" r="2" fill="#1a1a1a"/><circle cx="18" cy="2" r="2" fill="#1a1a1a"/></svg>';
+    const dotsIcon = '<svg width="16" height="4" viewBox="0 0 16 4"><circle cx="2" cy="2" r="2" fill="#666666"/><circle cx="8" cy="2" r="2" fill="#666666"/><circle cx="14" cy="2" r="2" fill="#666666"/></svg>';
     
     const typeLabels = {
         'solo': { text: 'Соло', class: 'type-solo' },
@@ -600,7 +599,7 @@ async function loadWalks() {
                     '<span class="dropdown-icon">👩</span> Ссылка для неё' +
                 '</button>' +
                 '<button class="dropdown-item" onclick="copyWalkLink(\'' + maleLink + '\', \'' + walk.title.replace(/'/g, "\\'") + ' (он)\')">' +
-                    '<span class="dropdown-icon">👨</span> Ссылка для него' +
+                    '<span class="dropdown-icon"></span> Ссылка для него' +
                 '</button>' +
                 '<div class="dropdown-divider"></div>' +
                 '<button class="dropdown-item" onclick="editWalk(\'' + walk.id + '\')">' +
@@ -783,7 +782,7 @@ window.saveWalk = async () => {
         
     } catch (e) {
         console.error('Ошибка сохранения прогулки:', e);
-        document.getElementById('walkSpinnerText').textContent = ' Ошибка: ' + e.message;
+        document.getElementById('walkSpinnerText').textContent = '❌ Ошибка: ' + e.message;
         document.getElementById('walkSpinnerText').style.color = '#e94560';
         
         setTimeout(() => {
@@ -922,7 +921,7 @@ async function loadUsers() {
         } else {
             menuContent = 
                 '<button class="track-dropdown-item" onclick="editUser(\'' + user.id + '\', \'' + user.last_name.replace(/'/g, "\\'") + '\', \'' + user.first_name.replace(/'/g, "\\'") + '\', \'' + user.email.replace(/'/g, "\\'") + '\', \'' + user.role + '\')">' +
-                    '<span>️</span> Редактировать' +
+                    '<span>✏️</span> Редактировать' +
                 '</button>' +
                 '<button class="track-dropdown-item danger" onclick="deleteUser(\'' + user.id + '\', \'' + user.email.replace(/'/g, "\\'") + '\')">' +
                     '<span>🗑</span> Удалить' +
@@ -1042,7 +1041,7 @@ window.saveUser = async () => {
             });
             
         } else {
-            document.getElementById('userSpinnerText').textContent = '👤 Создание аккаунта...';
+            document.getElementById('userSpinnerText').textContent = ' Создание аккаунта...';
             
             await callEdgeFunction('create-admin', {
                 email,
@@ -1063,7 +1062,7 @@ window.saveUser = async () => {
         
     } catch (e) {
         console.error('Ошибка сохранения пользователя:', e);
-        document.getElementById('userSpinnerText').textContent = ' Ошибка: ' + e.message;
+        document.getElementById('userSpinnerText').textContent = '❌ Ошибка: ' + e.message;
         document.getElementById('userSpinnerText').style.color = '#e94560';
         
         setTimeout(() => {
