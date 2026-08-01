@@ -8,6 +8,11 @@ let editingTrackId = null;
 let currentUserRole = null;
 let currentAdminId = null;
 let editingUserId = null;
+let currentPlayingAudio = null;
+let currentPlayingTrackId = null;
+
+const SUPABASE_URL = supabase.supabaseUrl;
+const SUPABASE_ANON_KEY = supabase.supabaseKey;
 
 // === ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ===
 
@@ -53,7 +58,6 @@ window.logout = async () => {
 
 supabase.auth.onAuthStateChange(async (event, session) => {
     if (session && session.user) {
-        // Проверяем роль в таблице admins
         const { data: admin, error } = await supabase
             .from('admins')
             .select('*')
@@ -62,7 +66,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         
         if (error || !admin) {
             await supabase.auth.signOut();
-            document.getElementById('loginError').textContent = '❌ У вас нет доступа к админке';
+            document.getElementById('loginError').textContent = ' У вас нет доступа к админке';
             return;
         }
         
@@ -75,7 +79,6 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         const roleLabel = admin.role === 'super_admin' ? 'Супер-админ' : 'Админ';
         document.getElementById('userEmail').textContent = session.user.email + ' (' + roleLabel + ')';
         
-        // Показываем вкладку пользователей только супер-админу
         const usersTabBtn = document.getElementById('usersTabBtn');
         if (currentUserRole === 'super_admin') {
             usersTabBtn.style.display = 'block';
@@ -263,6 +266,9 @@ window.copyWalkLink = async (link, title) => {
 
 // === АУДИОТРЕКИ ===
 
+const playIcon = '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 2 L10 6 L3 10 Z" fill="white"/></svg>';
+const pauseIcon = '<svg width="12" height="12" viewBox="0 0 12 12"><rect x="3" y="2" width="2" height="8" fill="white"/><rect x="7" y="2" width="2" height="8" fill="white"/></svg>';
+
 async function loadTracks() {
     closeAllMenus();
     
@@ -290,8 +296,13 @@ async function loadTracks() {
         
         return '<div class="item-card" id="track-' + track.id + '">' +
             '<div class="item-header" style="align-items: center;">' +
-                '<div class="item-info">' +
-                    '<h3 class="item-title" style="margin: 0;">' + track.title + '<span style="font-weight: 400; color: #999999;">' + durationText + '</span></h3>' +
+                '<div class="track-play-wrapper">' +
+                    '<button class="track-play-btn" id="play-btn-' + track.id + '" onclick="toggleTrackPreview(\'' + track.id + '\', \'' + track.file_url.replace(/'/g, "\\'") + '\')" title="Прослушать">' +
+                        playIcon +
+                    '</button>' +
+                    '<div class="item-info">' +
+                        '<h3 class="item-title" style="margin: 0;">' + track.title + '<span style="font-weight: 400; color: #999999;">' + durationText + '</span></h3>' +
+                    '</div>' +
                 '</div>' +
                 '<button class="track-menu-button" onclick="toggleTrackMenu(\'' + track.id + '\')" title="Меню">' + dotsIcon + '</button>' +
             '</div>' +
@@ -306,6 +317,58 @@ async function loadTracks() {
             '</div>' +
         '</div>';
     }).join('');
+}
+
+// Управление воспроизведением превью
+window.toggleTrackPreview = async (trackId, fileUrl) => {
+    const playBtn = document.getElementById('play-btn-' + trackId);
+    
+    if (currentPlayingTrackId === trackId && currentPlayingAudio) {
+        stopTrackPreview();
+        return;
+    }
+    
+    stopTrackPreview();
+    
+    try {
+        currentPlayingAudio = new Audio(fileUrl + '?t=' + Date.now());
+        currentPlayingTrackId = trackId;
+        
+        playBtn.innerHTML = pauseIcon;
+        playBtn.classList.add('playing');
+        
+        await currentPlayingAudio.play();
+        
+        currentPlayingAudio.addEventListener('ended', () => {
+            stopTrackPreview();
+        });
+        
+        currentPlayingAudio.addEventListener('error', (e) => {
+            console.error('Ошибка воспроизведения:', e);
+            stopTrackPreview();
+        });
+        
+    } catch (error) {
+        console.error('Ошибка запуска воспроизведения:', error);
+        stopTrackPreview();
+    }
+};
+
+function stopTrackPreview() {
+    if (currentPlayingAudio) {
+        currentPlayingAudio.pause();
+        currentPlayingAudio.src = '';
+        currentPlayingAudio = null;
+    }
+    
+    if (currentPlayingTrackId) {
+        const playBtn = document.getElementById('play-btn-' + currentPlayingTrackId);
+        if (playBtn) {
+            playBtn.innerHTML = playIcon;
+            playBtn.classList.remove('playing');
+        }
+        currentPlayingTrackId = null;
+    }
 }
 
 window.editTrack = (id, title) => {
@@ -527,17 +590,17 @@ async function loadWalks() {
         if (walkType === 'pair') {
             const femaleTrack = walk.audio_tracks ? walk.audio_tracks.title : 'не выбран';
             const maleTrack = walk.audio_tracks_2 ? walk.audio_tracks_2.title : 'не выбран';
-            tracksInfo = ' ' + femaleTrack + ' · 👨 ' + maleTrack;
+            tracksInfo = '👩 ' + femaleTrack + ' · 👨 ' + maleTrack;
             
             const femaleLink = playerUrl + '?walk=' + walk.id + '&role=female';
             const maleLink = playerUrl + '?walk=' + walk.id + '&role=male';
             
             menuItems = 
                 '<button class="dropdown-item" onclick="copyWalkLink(\'' + femaleLink + '\', \'' + walk.title.replace(/'/g, "\\'") + ' (она)\')">' +
-                    '<span class="dropdown-icon"></span> Ссылка для неё' +
+                    '<span class="dropdown-icon">👩</span> Ссылка для неё' +
                 '</button>' +
                 '<button class="dropdown-item" onclick="copyWalkLink(\'' + maleLink + '\', \'' + walk.title.replace(/'/g, "\\'") + ' (он)\')">' +
-                    '<span class="dropdown-icon"></span> Ссылка для него' +
+                    '<span class="dropdown-icon">👨</span> Ссылка для него' +
                 '</button>' +
                 '<div class="dropdown-divider"></div>' +
                 '<button class="dropdown-item" onclick="editWalk(\'' + walk.id + '\')">' +
@@ -720,7 +783,7 @@ window.saveWalk = async () => {
         
     } catch (e) {
         console.error('Ошибка сохранения прогулки:', e);
-        document.getElementById('walkSpinnerText').textContent = '❌ Ошибка: ' + e.message;
+        document.getElementById('walkSpinnerText').textContent = ' Ошибка: ' + e.message;
         document.getElementById('walkSpinnerText').style.color = '#e94560';
         
         setTimeout(() => {
@@ -794,6 +857,28 @@ window.deleteWalk = async (id) => {
 
 // === ПОЛЬЗОВАТЕЛИ ===
 
+async function callEdgeFunction(functionName, data) {
+    const response = await fetch(
+        SUPABASE_URL + '/functions/v1/' + functionName,
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify(data)
+        }
+    );
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+        throw new Error(result.error || 'Ошибка Edge Function');
+    }
+    
+    return result;
+}
+
 async function loadUsers() {
     if (currentUserRole !== 'super_admin') {
         return;
@@ -824,7 +909,6 @@ async function loadUsers() {
         'admin': { text: 'Админ', class: 'type-solo' }
     };
     
-    // Получаем email текущего пользователя из отображаемого текста
     const currentEmail = document.getElementById('userEmail').textContent.split(' ')[0];
     
     list.innerHTML = users.map(user => {
@@ -838,7 +922,7 @@ async function loadUsers() {
         } else {
             menuContent = 
                 '<button class="track-dropdown-item" onclick="editUser(\'' + user.id + '\', \'' + user.last_name.replace(/'/g, "\\'") + '\', \'' + user.first_name.replace(/'/g, "\\'") + '\', \'' + user.email.replace(/'/g, "\\'") + '\', \'' + user.role + '\')">' +
-                    '<span>✏️</span> Редактировать' +
+                    '<span>️</span> Редактировать' +
                 '</button>' +
                 '<button class="track-dropdown-item danger" onclick="deleteUser(\'' + user.id + '\', \'' + user.email.replace(/'/g, "\\'") + '\')">' +
                     '<span>🗑</span> Удалить' +
@@ -873,7 +957,6 @@ window.openUserModal = () => {
     document.getElementById('userPassword').value = '';
     document.getElementById('roleAdmin').checked = true;
     
-    // Показываем опцию супер-админа только супер-админу
     document.getElementById('superAdminOption').style.display = 
         currentUserRole === 'super_admin' ? 'block' : 'none';
     
@@ -940,7 +1023,6 @@ window.saveUser = async () => {
         return;
     }
     
-    // Показываем спиннер
     document.getElementById('userForm').classList.add('hidden');
     document.getElementById('userSpinner').classList.add('active');
     document.getElementById('userModalFooter').style.display = 'none';
@@ -948,68 +1030,27 @@ window.saveUser = async () => {
     
     try {
         if (editingUserId) {
-            // Редактирование
             document.getElementById('userSpinnerText').textContent = '💾 Обновление данных...';
             
-            // Обновляем email и пароль в auth.users если изменился
-            if (password) {
-                const { error: authError } = await supabase.auth.admin.updateUserById(
-                    editingUserId,
-                    { email: email, password: password }
-                );
-                if (authError) throw authError;
-            } else {
-                // Только email
-                const { error: authError } = await supabase.auth.admin.updateUserById(
-                    editingUserId,
-                    { email: email }
-                );
-                if (authError) throw authError;
-            }
-            
-            const { error } = await supabase
-                .from('admins')
-                .update({
-                    first_name: firstName,
-                    last_name: lastName,
-                    email: email,
-                    role: role
-                })
-                .eq('id', editingUserId);
-            
-            if (error) throw error;
-            
-        } else {
-            // Создание нового пользователя
-            document.getElementById('userSpinnerText').textContent = '👤 Создание аккаунта...';
-            
-            // Создаём пользователя в Supabase Auth
-            const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-                email: email,
-                password: password,
-                email_confirm: true
+            await callEdgeFunction('update-admin', {
+                adminId: editingUserId,
+                email,
+                password: password || undefined,
+                firstName,
+                lastName,
+                role
             });
             
-            if (authError) throw authError;
+        } else {
+            document.getElementById('userSpinnerText').textContent = '👤 Создание аккаунта...';
             
-            document.getElementById('userSpinnerText').textContent = '💾 Сохранение в базе...';
-            
-            // Добавляем запись в admins
-            const { error } = await supabase
-                .from('admins')
-                .insert({
-                    user_id: authData.user.id,
-                    first_name: firstName,
-                    last_name: lastName,
-                    email: email,
-                    role: role
-                });
-            
-            if (error) {
-                // Откатываем создание пользователя в auth
-                await supabase.auth.admin.deleteUser(authData.user.id);
-                throw error;
-            }
+            await callEdgeFunction('create-admin', {
+                email,
+                password,
+                firstName,
+                lastName,
+                role
+            });
         }
         
         document.getElementById('userSpinnerText').textContent = '✅ Сохранено!';
@@ -1022,7 +1063,7 @@ window.saveUser = async () => {
         
     } catch (e) {
         console.error('Ошибка сохранения пользователя:', e);
-        document.getElementById('userSpinnerText').textContent = '❌ Ошибка: ' + e.message;
+        document.getElementById('userSpinnerText').textContent = ' Ошибка: ' + e.message;
         document.getElementById('userSpinnerText').style.color = '#e94560';
         
         setTimeout(() => {
@@ -1043,26 +1084,7 @@ window.deleteUser = async (id, email) => {
     }
     
     try {
-        // Получаем user_id для удаления из auth
-        const { data: user } = await supabase
-            .from('admins')
-            .select('user_id')
-            .eq('id', id)
-            .single();
-        
-        // Удаляем из admins
-        const { error } = await supabase
-            .from('admins')
-            .delete()
-            .eq('id', id);
-        
-        if (error) throw error;
-        
-        // Удаляем из auth.users
-        if (user && user.user_id) {
-            await supabase.auth.admin.deleteUser(user.user_id);
-        }
-        
+        await callEdgeFunction('delete-admin', { adminId: id });
         loadUsers();
         
     } catch (e) {
