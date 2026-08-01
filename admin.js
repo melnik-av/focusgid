@@ -10,6 +10,7 @@ let currentAdminId = null;
 let editingUserId = null;
 let currentPlayingAudio = null;
 let currentPlayingTrackId = null;
+let trackProgressInterval = null;
 
 const SUPABASE_URL = supabase.supabaseUrl;
 const SUPABASE_ANON_KEY = supabase.supabaseKey;
@@ -102,7 +103,7 @@ function renderCoverPreview(imageUrl, showDelete) {
     if (showDelete && imageUrl) {
         container.innerHTML = 
             '<img src="' + imageUrl + '" alt="Обложка">' +
-            '<button class="cover-delete-btn" onclick="event.stopPropagation(); removeWalkCover()" title="Удалить обложку">🗑</button>';
+            '<button class="cover-delete-btn" onclick="event.stopPropagation(); removeWalkCover()" title="Удалить обложку"></button>';
     } else {
         container.innerHTML = 
             '<div class="cover-preview-placeholder">' +
@@ -292,7 +293,7 @@ async function loadTracks() {
     
     list.innerHTML = tracks.map(track => {
         const duration = formatDuration(track.duration);
-        const durationText = duration ? ' · ' + duration : '';
+        const durationText = duration || '0:00';
         
         return '<div class="item-card" id="track-' + track.id + '">' +
             '<div class="item-header" style="align-items: center;">' +
@@ -301,7 +302,15 @@ async function loadTracks() {
                         playIcon +
                     '</button>' +
                     '<div class="item-info">' +
-                        '<h3 class="item-title" style="margin: 0;">' + track.title + '<span style="font-weight: 400; color: #999999;">' + durationText + '</span></h3>' +
+                        '<h3 class="item-title" style="margin: 0;">' + track.title + '<span style="font-weight: 400; color: #999999;"> · ' + durationText + '</span></h3>' +
+                        '<div class="track-progress-container" id="progress-container-' + track.id + '">' +
+                            '<div class="track-progress-bar" id="progress-bar-' + track.id + '">' +
+                                '<div class="track-progress-fill" id="progress-fill-' + track.id + '"></div>' +
+                            '</div>' +
+                            '<div class="track-progress-time">' +
+                                '<span id="current-time-' + track.id + '">0:00</span> / <span>' + durationText + '</span>' +
+                            '</div>' +
+                        '</div>' +
                     '</div>' +
                 '</div>' +
                 '<button class="track-menu-button" onclick="toggleTrackMenu(\'' + track.id + '\')" title="Меню">' + dotsIcon + '</button>' +
@@ -338,6 +347,10 @@ window.toggleTrackPreview = async (trackId, fileUrl) => {
         
         await currentPlayingAudio.play();
         
+        trackProgressInterval = setInterval(() => {
+            updateTrackProgress(trackId);
+        }, 100);
+        
         currentPlayingAudio.addEventListener('ended', () => {
             stopTrackPreview();
         });
@@ -347,13 +360,50 @@ window.toggleTrackPreview = async (trackId, fileUrl) => {
             stopTrackPreview();
         });
         
+        const progressBar = document.getElementById('progress-bar-' + trackId);
+        progressBar.addEventListener('click', (e) => {
+            seekTrack(e, trackId);
+        });
+        
     } catch (error) {
         console.error('Ошибка запуска воспроизведения:', error);
         stopTrackPreview();
     }
 };
 
+function updateTrackProgress(trackId) {
+    if (!currentPlayingAudio || !currentPlayingAudio.duration) return;
+    
+    const currentTime = currentPlayingAudio.currentTime;
+    const duration = currentPlayingAudio.duration;
+    const progress = (currentTime / duration) * 100;
+    
+    const fill = document.getElementById('progress-fill-' + trackId);
+    const timeDisplay = document.getElementById('current-time-' + trackId);
+    
+    if (fill) fill.style.width = progress + '%';
+    if (timeDisplay) timeDisplay.textContent = formatDuration(currentTime);
+}
+
+function seekTrack(event, trackId) {
+    if (!currentPlayingAudio || currentPlayingTrackId !== trackId) return;
+    
+    const progressBar = document.getElementById('progress-bar-' + trackId);
+    const rect = progressBar.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const width = rect.width;
+    const percent = Math.max(0, Math.min(1, clickX / width));
+    
+    currentPlayingAudio.currentTime = percent * currentPlayingAudio.duration;
+    updateTrackProgress(trackId);
+}
+
 function stopTrackPreview() {
+    if (trackProgressInterval) {
+        clearInterval(trackProgressInterval);
+        trackProgressInterval = null;
+    }
+    
     if (currentPlayingAudio) {
         currentPlayingAudio.pause();
         currentPlayingAudio.src = '';
@@ -362,10 +412,16 @@ function stopTrackPreview() {
     
     if (currentPlayingTrackId) {
         const playBtn = document.getElementById('play-btn-' + currentPlayingTrackId);
+        const fill = document.getElementById('progress-fill-' + currentPlayingTrackId);
+        const timeDisplay = document.getElementById('current-time-' + currentPlayingTrackId);
+        
         if (playBtn) {
             playBtn.innerHTML = playIcon;
             playBtn.classList.remove('playing');
         }
+        if (fill) fill.style.width = '0%';
+        if (timeDisplay) timeDisplay.textContent = '0:00';
+        
         currentPlayingTrackId = null;
     }
 }
@@ -515,7 +571,7 @@ window.saveTrack = async () => {
         
     } catch (e) {
         console.error('Ошибка загрузки трека:', e);
-        document.getElementById('spinnerText').textContent = ' Ошибка: ' + e.message;
+        document.getElementById('spinnerText').textContent = '❌ Ошибка: ' + e.message;
         document.getElementById('spinnerText').style.color = '#e94560';
         
         setTimeout(() => {
@@ -579,7 +635,7 @@ async function loadWalks() {
         const typeInfo = typeLabels[walkType] || typeLabels['solo'];
         const coverHtml = walk.cover_url 
             ? '<img src="' + walk.cover_url + '" alt="' + walk.title + '">'
-            : '<div class="item-cover-placeholder">🚶</div>';
+            : '<div class="item-cover-placeholder"></div>';
         
         const walkLink = playerUrl + '?walk=' + walk.id;
         
@@ -596,14 +652,14 @@ async function loadWalks() {
             
             menuItems = 
                 '<button class="dropdown-item" onclick="copyWalkLink(\'' + femaleLink + '\', \'' + walk.title.replace(/'/g, "\\'") + ' (она)\')">' +
-                    '<span class="dropdown-icon">👩</span> Ссылка для неё' +
+                    '<span class="dropdown-icon"></span> Ссылка для неё' +
                 '</button>' +
                 '<button class="dropdown-item" onclick="copyWalkLink(\'' + maleLink + '\', \'' + walk.title.replace(/'/g, "\\'") + ' (он)\')">' +
-                    '<span class="dropdown-icon"></span> Ссылка для него' +
+                    '<span class="dropdown-icon">👨</span> Ссылка для него' +
                 '</button>' +
                 '<div class="dropdown-divider"></div>' +
                 '<button class="dropdown-item" onclick="editWalk(\'' + walk.id + '\')">' +
-                    '<span class="dropdown-icon">✏️</span> Редактировать' +
+                    '<span class="dropdown-icon">️</span> Редактировать' +
                 '</button>' +
                 '<button class="dropdown-item danger" onclick="deleteWalk(\'' + walk.id + '\')">' +
                     '<span class="dropdown-icon">🗑</span> Удалить' +
@@ -1041,7 +1097,7 @@ window.saveUser = async () => {
             });
             
         } else {
-            document.getElementById('userSpinnerText').textContent = ' Создание аккаунта...';
+            document.getElementById('userSpinnerText').textContent = '👤 Создание аккаунта...';
             
             await callEdgeFunction('create-admin', {
                 email,
@@ -1093,7 +1149,7 @@ window.deleteUser = async (id, email) => {
 };
 
 function formatDuration(seconds) {
-    if (!seconds || isNaN(seconds)) return '';
+    if (!seconds || isNaN(seconds)) return '0:00';
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
