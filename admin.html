@@ -180,6 +180,11 @@
         
         .btn-primary:hover { background: #333333; }
         
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
         .btn-danger { color: #e94560; }
         
         .btn-danger:hover {
@@ -581,6 +586,47 @@
         
         .hidden { display: none !important; }
         
+        /* Спиннер загрузки */
+        .upload-spinner-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 30px 20px;
+        }
+        
+        .upload-spinner-container.active {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #1a1a1a;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .spinner-text {
+            font-size: 14px;
+            color: #666666;
+            text-align: center;
+        }
+        
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .upload-form.hidden {
+            display: none;
+        }
+        
         @media (max-width: 480px) {
             body { padding: 20px 16px; }
             h1 { font-size: 26px; }
@@ -674,15 +720,22 @@
                 <button class="modal-close" onclick="closeTrackModal()">✕</button>
             </div>
             <div class="modal-body">
-                <label class="field-label">Название трека *</label>
-                <input type="text" id="trackTitle" placeholder="Например: Лесной резонанс">
+                <div class="upload-form" id="uploadForm">
+                    <label class="field-label">Название трека *</label>
+                    <input type="text" id="trackTitle" placeholder="Например: Лесной резонанс">
+                    
+                    <label class="field-label">Аудиофайл (MP3) *</label>
+                    <input type="file" id="trackFile" accept="audio/mp3,audio/mpeg">
+                </div>
                 
-                <label class="field-label">Аудиофайл (MP3) *</label>
-                <input type="file" id="trackFile" accept="audio/mp3,audio/mpeg">
+                <div class="upload-spinner-container" id="uploadSpinner">
+                    <div class="spinner"></div>
+                    <div class="spinner-text" id="spinnerText">Загрузка файла...</div>
+                </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" id="trackModalFooter">
                 <button class="btn" onclick="closeTrackModal()">Отмена</button>
-                <button class="btn btn-primary" onclick="saveTrack()">Загрузить</button>
+                <button class="btn btn-primary" id="saveTrackBtn" onclick="saveTrack()">Загрузить</button>
             </div>
         </div>
     </div>
