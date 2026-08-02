@@ -1,19 +1,14 @@
 import { supabase } from './supabase-config.js';
 
+// ⚠️ ЗАМЕНИТЕ НА EMAIL СУПЕР-АДМИНА
+const SUPER_ADMIN_EMAIL = 'admin@focusgid.ru';
+
 let currentTab = 'walks';
 let selectedCoverFile = null;
 let selectedCoverUrl = null;
 let editingWalkId = null;
 let editingTrackId = null;
-let currentUserRole = null;
-let currentAdminId = null;
-let editingUserId = null;
-let currentPlayingAudio = null;
-let currentPlayingTrackId = null;
-let trackProgressInterval = null;
-
-const SUPABASE_URL = supabase.supabaseUrl;
-const SUPABASE_ANON_KEY = supabase.supabaseKey;
+let currentUserProfile = null;
 
 // === ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ===
 
@@ -22,18 +17,16 @@ window.switchTab = (tab) => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     
-    const tabs = document.querySelectorAll('.tab');
-    
     if (tab === 'walks') {
-        tabs[0].classList.add('active');
+        document.querySelectorAll('.tab')[0].classList.add('active');
         document.getElementById('walksTab').classList.add('active');
         loadWalks();
     } else if (tab === 'tracks') {
-        tabs[1].classList.add('active');
+        document.querySelectorAll('.tab')[1].classList.add('active');
         document.getElementById('tracksTab').classList.add('active');
         loadTracks();
     } else if (tab === 'users') {
-        tabs[2].classList.add('active');
+        document.querySelectorAll('.tab')[2].classList.add('active');
         document.getElementById('usersTab').classList.add('active');
         loadUsers();
     }
@@ -47,54 +40,166 @@ window.login = async () => {
     const errorEl = document.getElementById('loginError');
     errorEl.textContent = '';
     
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
         errorEl.textContent = '❌ ' + error.message;
+        return;
     }
+    
+    // Проверяем профиль пользователя
+    await checkUserProfile(data.user);
 };
 
 window.logout = async () => {
     await supabase.auth.signOut();
 };
 
-supabase.auth.onAuthStateChange(async (event, session) => {
-    if (session && session.user) {
-        const { data: admin, error } = await supabase
-            .from('admins')
-            .select('*')
-            .eq('email', session.user.email)
-            .single();
-        
-        if (error || !admin) {
+// Проверка и создание профиля пользователя
+async function checkUserProfile(user) {
+    const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+    
+    if (profile) {
+        // Профиль существует
+        if (!profile.approved && profile.role !== 'admin') {
+            // Ведущий не одобрен
+            alert('Ваш аккаунт ещё не одобрен администратором');
             await supabase.auth.signOut();
-            document.getElementById('loginError').textContent = '❌ У вас нет доступа к админке';
             return;
         }
         
-        currentUserRole = admin.role;
-        currentAdminId = admin.id;
-        
-        document.getElementById('loginForm').classList.add('hidden');
-        document.getElementById('adminPanel').classList.remove('hidden');
-        
-        const roleLabel = admin.role === 'super_admin' ? 'Супер-админ' : 'Админ';
-        document.getElementById('userEmail').textContent = session.user.email + ' (' + roleLabel + ')';
-        
-        const usersTabBtn = document.getElementById('usersTabBtn');
-        if (currentUserRole === 'super_admin') {
-            usersTabBtn.style.display = 'block';
-        } else {
-            usersTabBtn.style.display = 'none';
-        }
-        
-        loadWalks();
+        currentUserProfile = profile;
+        showAdminPanel(user, profile);
     } else {
-        document.getElementById('loginForm').classList.remove('hidden');
-        document.getElementById('adminPanel').classList.add('hidden');
-        currentUserRole = null;
-        currentAdminId = null;
+        // Профиль не существует
+        if (user.email === SUPER_ADMIN_EMAIL) {
+            // Создаём профиль супер-админа
+            const { error } = await supabase
+                .from('user_profiles')
+                .insert({
+                    user_id: user.id,
+                    role: 'admin',
+                    name: 'Администратор',
+                    email: user.email,
+                    approved: true
+                });
+            
+            if (error) {
+                console.error('Ошибка создания профиля админа:', error);
+                alert('Ошибка создания профиля');
+                await supabase.auth.signOut();
+                return;
+            }
+            
+            currentUserProfile = {
+                user_id: user.id,
+                role: 'admin',
+                name: 'Администратор',
+                email: user.email,
+                approved: true
+            };
+            
+            showAdminPanel(user, currentUserProfile);
+        } else {
+            // Обычный пользователь без профиля
+            alert('Профиль не найден. Обратитесь к администратору.');
+            await supabase.auth.signOut();
+        }
     }
-});
+}
+
+function showAdminPanel(user, profile) {
+    document.getElementById('loginForm').classList.add('hidden');
+    document.getElementById('registerForm').classList.add('hidden');
+    document.getElementById('adminPanel').classList.remove('hidden');
+    document.getElementById('userEmail').textContent = user.email;
+    
+    const roleEl = document.getElementById('userRole');
+    if (profile.role === 'admin') {
+        roleEl.innerHTML = '<span class="role-badge role-admin">Администратор</span>';
+        document.getElementById('usersTab').style.display = 'block';
+    } else {
+        roleEl.innerHTML = '<span class="role-badge role-host">Ведущий</span>';
+        document.getElementById('usersTab').style.display = 'none';
+    }
+    
+    loadWalks();
+}
+
+// Регистрация ведущего
+window.registerHost = async () => {
+    const name = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const phone = document.getElementById('regPhone').value.trim();
+    const bio = document.getElementById('regBio').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const errorEl = document.getElementById('registerError');
+    const successEl = document.getElementById('registerSuccess');
+    
+    errorEl.textContent = '';
+    successEl.textContent = '';
+    
+    if (!name || !email || !password) {
+        errorEl.textContent = 'Заполните обязательные поля';
+        return;
+    }
+    
+    // Создаём пользователя в auth
+    const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+            data: {
+                name: name
+            }
+        }
+    });
+    
+    if (error) {
+        errorEl.textContent = '❌ ' + error.message;
+        return;
+    }
+    
+    // Создаём профиль в user_profiles
+    const { error: profileError } = await supabase
+        .from('user_profiles')
+        .insert({
+            user_id: data.user.id,
+            role: 'host',
+            name: name,
+            email: email,
+            phone: phone || null,
+            bio: bio || null,
+            approved: false
+        });
+    
+    if (profileError) {
+        errorEl.textContent = '❌ Ошибка создания профиля: ' + profileError.message;
+        return;
+    }
+    
+    successEl.textContent = '✅ Заявка отправлена! Ожидайте одобрения администратора.';
+    
+    // Очищаем форму
+    document.getElementById('regName').value = '';
+    document.getElementById('regEmail').value = '';
+    document.getElementById('regPhone').value = '';
+    document.getElementById('regBio').value = '';
+    document.getElementById('regPassword').value = '';
+};
+
+window.showRegisterForm = () => {
+    document.getElementById('loginForm').classList.add('hidden');
+    document.getElementById('registerForm').classList.remove('hidden');
+};
+
+window.showLoginForm = () => {
+    document.getElementById('registerForm').classList.add('hidden');
+    document.getElementById('loginForm').classList.remove('hidden');
+};
 
 // === ОБЛОЖКА ===
 
@@ -103,7 +208,7 @@ function renderCoverPreview(imageUrl, showDelete) {
     if (showDelete && imageUrl) {
         container.innerHTML = 
             '<img src="' + imageUrl + '" alt="Обложка">' +
-            '<button class="cover-delete-btn" onclick="event.stopPropagation(); removeWalkCover()" title="Удалить обложку"></button>';
+            '<button class="cover-delete-btn" onclick="event.stopPropagation(); removeWalkCover()" title="Удалить обложку">🗑</button>';
     } else {
         container.innerHTML = 
             '<div class="cover-preview-placeholder">' +
@@ -175,18 +280,9 @@ function closeAllTrackMenus() {
     });
 }
 
-function closeAllUserMenus() {
-    document.querySelectorAll('.track-dropdown-menu').forEach(menu => {
-        if (menu.id && menu.id.startsWith('user-menu-')) {
-            menu.classList.remove('active');
-        }
-    });
-}
-
 function closeAllMenus() {
     closeAllWalkMenus();
     closeAllTrackMenus();
-    closeAllUserMenus();
     const overlay = document.getElementById('menuOverlay');
     if (overlay) overlay.classList.remove('active');
 }
@@ -208,21 +304,6 @@ window.toggleWalkMenu = (id) => {
 
 window.toggleTrackMenu = (id) => {
     const menu = document.getElementById('track-menu-' + id);
-    const overlay = document.getElementById('menuOverlay');
-    
-    if (menu.classList.contains('active')) {
-        closeAllMenus();
-        return;
-    }
-    
-    closeAllMenus();
-    
-    menu.classList.add('active');
-    if (overlay) overlay.classList.add('active');
-};
-
-window.toggleUserMenu = (id) => {
-    const menu = document.getElementById('user-menu-' + id);
     const overlay = document.getElementById('menuOverlay');
     
     if (menu.classList.contains('active')) {
@@ -265,10 +346,112 @@ window.copyWalkLink = async (link, title) => {
     }
 };
 
-// === АУДИОТРЕКИ ===
+// === ПОЛЬЗОВАТЕЛИ ===
 
-const playIcon = '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 2 L10 6 L3 10 Z" fill="white"/></svg>';
-const pauseIcon = '<svg width="12" height="12" viewBox="0 0 12 12"><rect x="3" y="2" width="2" height="8" fill="white"/><rect x="7" y="2" width="2" height="8" fill="white"/></svg>';
+async function loadUsers() {
+    if (currentUserProfile.role !== 'admin') {
+        return;
+    }
+    
+    const { data: users, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+    
+    if (error) {
+        console.error('Ошибка загрузки пользователей:', error);
+        return;
+    }
+    
+    const list = document.getElementById('usersList');
+    if (!users || users.length === 0) {
+        list.innerHTML = '<div style="color: #999999; text-align: center; padding: 40px;">Нет пользователей</div>';
+        return;
+    }
+    
+    list.innerHTML = users.map(user => {
+        const roleBadge = user.role === 'admin' 
+            ? '<span class="role-badge role-admin">Админ</span>'
+            : '<span class="role-badge role-host">Ведущий</span>';
+        
+        const pendingBadge = !user.approved ? '<span class="pending-badge">Ожидает одобрения</span>' : '';
+        
+        let actions = '';
+        if (user.user_id !== currentUserProfile.user_id) {
+            if (!user.approved && user.role === 'host') {
+                actions = `
+                    <button class="btn btn-success" onclick="approveUser('${user.user_id}')">Одобрить</button>
+                    <button class="btn btn-danger" onclick="rejectUser('${user.user_id}')">Отклонить</button>
+                `;
+            } else {
+                actions = `
+                    <button class="btn btn-danger" onclick="deleteUser('${user.user_id}')">Удалить</button>
+                `;
+            }
+        }
+        
+        return '<div class="item-card">' +
+            '<div class="user-card">' +
+                '<div class="user-card-info">' +
+                    '<div class="user-card-name">' + user.name + pendingBadge + '</div>' +
+                    '<div class="user-card-email">' + user.email + '</div>' +
+                    '<div>' + roleBadge + '</div>' +
+                    (user.phone ? '<div style="font-size: 13px; color: #999999; margin-top: 4px;"> ' + user.phone + '</div>' : '') +
+                    (user.bio ? '<div style="font-size: 13px; color: #666666; margin-top: 8px; line-height: 1.4;">' + user.bio + '</div>' : '') +
+                '</div>' +
+                '<div class="user-card-actions">' +
+                    actions +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+window.approveUser = async (userId) => {
+    if (!confirm('Одобрить этого пользователя?')) return;
+    
+    const { error } = await supabase
+        .from('user_profiles')
+        .update({ approved: true })
+        .eq('user_id', userId);
+    
+    if (error) {
+        alert('Ошибка: ' + error.message);
+    } else {
+        loadUsers();
+    }
+};
+
+window.rejectUser = async (userId) => {
+    if (!confirm('Отклонить и удалить этого пользователя?')) return;
+    
+    // Удаляем пользователя из auth
+    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+    
+    if (authError) {
+        alert('Ошибка удаления: ' + authError.message);
+        return;
+    }
+    
+    // Профиль удалится автоматически через ON DELETE CASCADE
+    
+    loadUsers();
+};
+
+window.deleteUser = async (userId) => {
+    if (!confirm('Удалить этого пользователя?')) return;
+    
+    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+    
+    if (authError) {
+        alert('Ошибка удаления: ' + authError.message);
+        return;
+    }
+    
+    loadUsers();
+};
+
+// === АУДИОТРЕКИ ===
 
 async function loadTracks() {
     closeAllMenus();
@@ -293,25 +476,12 @@ async function loadTracks() {
     
     list.innerHTML = tracks.map(track => {
         const duration = formatDuration(track.duration);
-        const durationText = duration || '0:00';
+        const durationText = duration ? ' · ' + duration : '';
         
         return '<div class="item-card" id="track-' + track.id + '">' +
             '<div class="item-header" style="align-items: center;">' +
-                '<div class="track-play-wrapper">' +
-                    '<button class="track-play-btn" id="play-btn-' + track.id + '" onclick="toggleTrackPreview(\'' + track.id + '\', \'' + track.file_url.replace(/'/g, "\\'") + '\')" title="Прослушать">' +
-                        playIcon +
-                    '</button>' +
-                    '<div class="item-info">' +
-                        '<h3 class="item-title" style="margin: 0;">' + track.title + '<span style="font-weight: 400; color: #999999;"> · ' + durationText + '</span></h3>' +
-                        '<div class="track-progress-container" id="progress-container-' + track.id + '">' +
-                            '<div class="track-progress-bar" id="progress-bar-' + track.id + '">' +
-                                '<div class="track-progress-fill" id="progress-fill-' + track.id + '"></div>' +
-                            '</div>' +
-                            '<div class="track-progress-time">' +
-                                '<span id="current-time-' + track.id + '">0:00</span> / <span>' + durationText + '</span>' +
-                            '</div>' +
-                        '</div>' +
-                    '</div>' +
+                '<div class="item-info">' +
+                    '<h3 class="item-title" style="margin: 0;">' + track.title + '<span style="font-weight: 400; color: #999999;">' + durationText + '</span></h3>' +
                 '</div>' +
                 '<button class="track-menu-button" onclick="toggleTrackMenu(\'' + track.id + '\')" title="Меню">' + dotsIcon + '</button>' +
             '</div>' +
@@ -326,104 +496,6 @@ async function loadTracks() {
             '</div>' +
         '</div>';
     }).join('');
-}
-
-window.toggleTrackPreview = async (trackId, fileUrl) => {
-    const playBtn = document.getElementById('play-btn-' + trackId);
-    
-    if (currentPlayingTrackId === trackId && currentPlayingAudio) {
-        stopTrackPreview();
-        return;
-    }
-    
-    stopTrackPreview();
-    
-    try {
-        currentPlayingAudio = new Audio(fileUrl + '?t=' + Date.now());
-        currentPlayingTrackId = trackId;
-        
-        playBtn.innerHTML = pauseIcon;
-        playBtn.classList.add('playing');
-        
-        await currentPlayingAudio.play();
-        
-        trackProgressInterval = setInterval(() => {
-            updateTrackProgress(trackId);
-        }, 100);
-        
-        currentPlayingAudio.addEventListener('ended', () => {
-            stopTrackPreview();
-        });
-        
-        currentPlayingAudio.addEventListener('error', (e) => {
-            console.error('Ошибка воспроизведения:', e);
-            stopTrackPreview();
-        });
-        
-        const progressBar = document.getElementById('progress-bar-' + trackId);
-        progressBar.addEventListener('click', (e) => {
-            seekTrack(e, trackId);
-        });
-        
-    } catch (error) {
-        console.error('Ошибка запуска воспроизведения:', error);
-        stopTrackPreview();
-    }
-};
-
-function updateTrackProgress(trackId) {
-    if (!currentPlayingAudio || !currentPlayingAudio.duration) return;
-    
-    const currentTime = currentPlayingAudio.currentTime;
-    const duration = currentPlayingAudio.duration;
-    const progress = (currentTime / duration) * 100;
-    
-    const fill = document.getElementById('progress-fill-' + trackId);
-    const timeDisplay = document.getElementById('current-time-' + trackId);
-    
-    if (fill) fill.style.width = progress + '%';
-    if (timeDisplay) timeDisplay.textContent = formatDuration(currentTime);
-}
-
-function seekTrack(event, trackId) {
-    if (!currentPlayingAudio || currentPlayingTrackId !== trackId) return;
-    
-    const progressBar = document.getElementById('progress-bar-' + trackId);
-    const rect = progressBar.getBoundingClientRect();
-    const clickX = event.clientX - rect.left;
-    const width = rect.width;
-    const percent = Math.max(0, Math.min(1, clickX / width));
-    
-    currentPlayingAudio.currentTime = percent * currentPlayingAudio.duration;
-    updateTrackProgress(trackId);
-}
-
-function stopTrackPreview() {
-    if (trackProgressInterval) {
-        clearInterval(trackProgressInterval);
-        trackProgressInterval = null;
-    }
-    
-    if (currentPlayingAudio) {
-        currentPlayingAudio.pause();
-        currentPlayingAudio.src = '';
-        currentPlayingAudio = null;
-    }
-    
-    if (currentPlayingTrackId) {
-        const playBtn = document.getElementById('play-btn-' + currentPlayingTrackId);
-        const fill = document.getElementById('progress-fill-' + currentPlayingTrackId);
-        const timeDisplay = document.getElementById('current-time-' + currentPlayingTrackId);
-        
-        if (playBtn) {
-            playBtn.innerHTML = playIcon;
-            playBtn.classList.remove('playing');
-        }
-        if (fill) fill.style.width = '0%';
-        if (timeDisplay) timeDisplay.textContent = '0:00';
-        
-        currentPlayingTrackId = null;
-    }
 }
 
 window.editTrack = (id, title) => {
@@ -511,7 +583,7 @@ window.saveTrack = async () => {
             .from('tracks')
             .getPublicUrl(fileName);
         
-        document.getElementById('spinnerText').textContent = '⏱️ Определение длительности...';
+        document.getElementById('spinnerText').textContent = '️ Определение длительности...';
         
         let duration = null;
         try {
@@ -604,10 +676,17 @@ window.deleteTrack = async (id) => {
 async function loadWalks() {
     closeAllMenus();
     
-    const { data: walks, error } = await supabase
+    let query = supabase
         .from('walks')
         .select('*, audio_tracks!audio_track_id(title), audio_tracks_2:audio_tracks!audio_track_id_2(title)')
         .order('created_at', { ascending: false });
+    
+    // Ведущие видят только свои прогулки
+    if (currentUserProfile && currentUserProfile.role === 'host') {
+        query = query.eq('host_id', currentUserProfile.user_id);
+    }
+    
+    const { data: walks, error } = await query;
     
     if (error) {
         console.error('Ошибка загрузки прогулок:', error);
@@ -622,7 +701,7 @@ async function loadWalks() {
     
     const playerUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
     
-    const dotsIcon = '<svg width="16" height="4" viewBox="0 0 16 4"><circle cx="2" cy="2" r="2" fill="#666666"/><circle cx="8" cy="2" r="2" fill="#666666"/><circle cx="14" cy="2" r="2" fill="#666666"/></svg>';
+    const dotsIcon = '<svg width="20" height="4" viewBox="0 0 20 4"><circle cx="2" cy="2" r="2" fill="#1a1a1a"/><circle cx="10" cy="2" r="2" fill="#1a1a1a"/><circle cx="18" cy="2" r="2" fill="#1a1a1a"/></svg>';
     
     const typeLabels = {
         'solo': { text: 'Соло', class: 'type-solo' },
@@ -635,7 +714,7 @@ async function loadWalks() {
         const typeInfo = typeLabels[walkType] || typeLabels['solo'];
         const coverHtml = walk.cover_url 
             ? '<img src="' + walk.cover_url + '" alt="' + walk.title + '">'
-            : '<div class="item-cover-placeholder"></div>';
+            : '<div class="item-cover-placeholder">🚶</div>';
         
         const walkLink = playerUrl + '?walk=' + walk.id;
         
@@ -652,17 +731,17 @@ async function loadWalks() {
             
             menuItems = 
                 '<button class="dropdown-item" onclick="copyWalkLink(\'' + femaleLink + '\', \'' + walk.title.replace(/'/g, "\\'") + ' (она)\')">' +
-                    '<span class="dropdown-icon"></span> Ссылка для неё' +
+                    '<span class="dropdown-icon">👩</span> Ссылка для неё' +
                 '</button>' +
                 '<button class="dropdown-item" onclick="copyWalkLink(\'' + maleLink + '\', \'' + walk.title.replace(/'/g, "\\'") + ' (он)\')">' +
                     '<span class="dropdown-icon">👨</span> Ссылка для него' +
                 '</button>' +
                 '<div class="dropdown-divider"></div>' +
                 '<button class="dropdown-item" onclick="editWalk(\'' + walk.id + '\')">' +
-                    '<span class="dropdown-icon">️</span> Редактировать' +
+                    '<span class="dropdown-icon">✏️</span> Редактировать' +
                 '</button>' +
                 '<button class="dropdown-item danger" onclick="deleteWalk(\'' + walk.id + '\')">' +
-                    '<span class="dropdown-icon">🗑</span> Удалить' +
+                    '<span class="dropdown-icon"></span> Удалить' +
                 '</button>';
         } else {
             const trackTitle = walk.audio_tracks ? walk.audio_tracks.title : 'Без трека';
@@ -798,7 +877,8 @@ window.saveWalk = async () => {
         const walkData = {
             title,
             description: description || null,
-            type
+            type,
+            host_id: currentUserProfile.user_id
         };
         
         if (type === 'pair') {
@@ -861,6 +941,12 @@ window.editWalk = async (id) => {
         return;
     }
     
+    // Проверка прав (ведущий может редактировать только свои)
+    if (currentUserProfile.role === 'host' && walk.host_id !== currentUserProfile.user_id) {
+        alert('У вас нет прав на редактирование этой прогулки');
+        return;
+    }
+    
     editingWalkId = id;
     document.getElementById('walkModalTitle').textContent = 'Редактировать прогулку';
     document.getElementById('walkTitle').value = walk.title || '';
@@ -910,246 +996,8 @@ window.deleteWalk = async (id) => {
     }
 };
 
-// === ПОЛЬЗОВАТЕЛИ ===
-
-async function callEdgeFunction(functionName, data) {
-    const response = await fetch(
-        SUPABASE_URL + '/functions/v1/' + functionName,
-        {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
-            },
-            body: JSON.stringify(data)
-        }
-    );
-    
-    const result = await response.json();
-    
-    if (!response.ok) {
-        throw new Error(result.error || 'Ошибка Edge Function');
-    }
-    
-    return result;
-}
-
-async function loadUsers() {
-    if (currentUserRole !== 'super_admin') {
-        return;
-    }
-    
-    closeAllMenus();
-    
-    const { data: users, error } = await supabase
-        .from('admins')
-        .select('*')
-        .order('created_at', { ascending: false });
-    
-    if (error) {
-        console.error('Ошибка загрузки пользователей:', error);
-        return;
-    }
-    
-    const list = document.getElementById('usersList');
-    if (!users || users.length === 0) {
-        list.innerHTML = '<div style="color: #999999; text-align: center; padding: 40px;">Нет пользователей</div>';
-        return;
-    }
-    
-    const dotsIcon = '<svg width="16" height="4" viewBox="0 0 16 4"><circle cx="2" cy="2" r="2" fill="#666666"/><circle cx="8" cy="2" r="2" fill="#666666"/><circle cx="14" cy="2" r="2" fill="#666666"/></svg>';
-    
-    const roleLabels = {
-        'super_admin': { text: 'Супер-админ', class: 'type-pair' },
-        'admin': { text: 'Админ', class: 'type-solo' }
-    };
-    
-    const currentEmail = document.getElementById('userEmail').textContent.split(' ')[0];
-    
-    list.innerHTML = users.map(user => {
-        const roleInfo = roleLabels[user.role] || roleLabels['admin'];
-        const isCurrentUser = user.email === currentEmail;
-        
-        let menuContent = '';
-        
-        if (isCurrentUser) {
-            menuContent = '<div class="current-user-marker">Это вы</div>';
-        } else {
-            menuContent = 
-                '<button class="track-dropdown-item" onclick="editUser(\'' + user.id + '\', \'' + user.last_name.replace(/'/g, "\\'") + '\', \'' + user.first_name.replace(/'/g, "\\'") + '\', \'' + user.email.replace(/'/g, "\\'") + '\', \'' + user.role + '\')">' +
-                    '<span>✏️</span> Редактировать' +
-                '</button>' +
-                '<button class="track-dropdown-item danger" onclick="deleteUser(\'' + user.id + '\', \'' + user.email.replace(/'/g, "\\'") + '\')">' +
-                    '<span>🗑</span> Удалить' +
-                '</button>';
-        }
-        
-        return '<div class="item-card" id="user-' + user.id + '">' +
-            '<div class="item-header" style="align-items: center;">' +
-                '<div class="item-info">' +
-                    '<h3 class="item-title" style="margin: 0;">' + user.last_name + ' ' + user.first_name + '</h3>' +
-                    '<div class="item-meta" style="margin-top: 4px;">' + user.email + '</div>' +
-                '</div>' +
-                '<div style="display: flex; align-items: center; gap: 12px;">' +
-                    '<span class="type-badge ' + roleInfo.class + '">' + roleInfo.text + '</span>' +
-                    '<button class="track-menu-button" onclick="toggleUserMenu(\'' + user.id + '\')" title="Меню">' + dotsIcon + '</button>' +
-                '</div>' +
-            '</div>' +
-            
-            '<div class="track-dropdown-menu" id="user-menu-' + user.id + '">' +
-                menuContent +
-            '</div>' +
-        '</div>';
-    }).join('');
-}
-
-window.openUserModal = () => {
-    editingUserId = null;
-    document.getElementById('userModalTitle').textContent = 'Добавить админа';
-    document.getElementById('userLastName').value = '';
-    document.getElementById('userFirstName').value = '';
-    document.getElementById('userEmailInput').value = '';
-    document.getElementById('userPassword').value = '';
-    document.getElementById('roleAdmin').checked = true;
-    
-    document.getElementById('superAdminOption').style.display = 
-        currentUserRole === 'super_admin' ? 'block' : 'none';
-    
-    document.getElementById('userForm').classList.remove('hidden');
-    document.getElementById('userSpinner').classList.remove('active');
-    document.getElementById('userModalFooter').style.display = 'flex';
-    document.getElementById('saveUserBtn').disabled = false;
-    document.getElementById('userSpinnerText').style.color = '#666666';
-    
-    document.getElementById('userModal').classList.add('active');
-};
-
-window.closeUserModal = () => {
-    document.getElementById('userModal').classList.remove('active');
-    editingUserId = null;
-};
-
-window.editUser = (id, lastName, firstName, email, role) => {
-    closeAllMenus();
-    editingUserId = id;
-    
-    document.getElementById('userModalTitle').textContent = 'Редактировать админа';
-    document.getElementById('userLastName').value = lastName;
-    document.getElementById('userFirstName').value = firstName;
-    document.getElementById('userEmailInput').value = email;
-    document.getElementById('userPassword').value = '';
-    
-    if (role === 'super_admin') {
-        document.getElementById('roleSuperAdmin').checked = true;
-    } else {
-        document.getElementById('roleAdmin').checked = true;
-    }
-    
-    document.getElementById('superAdminOption').style.display = 
-        currentUserRole === 'super_admin' ? 'block' : 'none';
-    
-    document.getElementById('userForm').classList.remove('hidden');
-    document.getElementById('userSpinner').classList.remove('active');
-    document.getElementById('userModalFooter').style.display = 'flex';
-    document.getElementById('saveUserBtn').disabled = false;
-    
-    document.getElementById('userModal').classList.add('active');
-};
-
-window.saveUser = async () => {
-    const lastName = document.getElementById('userLastName').value.trim();
-    const firstName = document.getElementById('userFirstName').value.trim();
-    const email = document.getElementById('userEmailInput').value.trim();
-    const password = document.getElementById('userPassword').value;
-    const role = document.querySelector('input[name="userRole"]:checked').value;
-    
-    if (!lastName || !firstName || !email) {
-        alert('Заполните все обязательные поля');
-        return;
-    }
-    
-    if (!editingUserId && !password) {
-        alert('Введите пароль для нового пользователя');
-        return;
-    }
-    
-    if (password && password.length < 6) {
-        alert('Пароль должен содержать минимум 6 символов');
-        return;
-    }
-    
-    document.getElementById('userForm').classList.add('hidden');
-    document.getElementById('userSpinner').classList.add('active');
-    document.getElementById('userModalFooter').style.display = 'none';
-    document.getElementById('saveUserBtn').disabled = true;
-    
-    try {
-        if (editingUserId) {
-            document.getElementById('userSpinnerText').textContent = '💾 Обновление данных...';
-            
-            await callEdgeFunction('update-admin', {
-                adminId: editingUserId,
-                email,
-                password: password || undefined,
-                firstName,
-                lastName,
-                role
-            });
-            
-        } else {
-            document.getElementById('userSpinnerText').textContent = '👤 Создание аккаунта...';
-            
-            await callEdgeFunction('create-admin', {
-                email,
-                password,
-                firstName,
-                lastName,
-                role
-            });
-        }
-        
-        document.getElementById('userSpinnerText').textContent = '✅ Сохранено!';
-        document.getElementById('userSpinnerText').style.color = '#2e7d32';
-        
-        setTimeout(() => {
-            closeUserModal();
-            loadUsers();
-        }, 1000);
-        
-    } catch (e) {
-        console.error('Ошибка сохранения пользователя:', e);
-        document.getElementById('userSpinnerText').textContent = '❌ Ошибка: ' + e.message;
-        document.getElementById('userSpinnerText').style.color = '#e94560';
-        
-        setTimeout(() => {
-            document.getElementById('userForm').classList.remove('hidden');
-            document.getElementById('userSpinner').classList.remove('active');
-            document.getElementById('userModalFooter').style.display = 'flex';
-            document.getElementById('saveUserBtn').disabled = false;
-            document.getElementById('userSpinnerText').style.color = '#666666';
-        }, 2000);
-    }
-};
-
-window.deleteUser = async (id, email) => {
-    closeAllMenus();
-    
-    if (!confirm('Удалить пользователя ' + email + '?\n\nПользователь потеряет доступ к админке.')) {
-        return;
-    }
-    
-    try {
-        await callEdgeFunction('delete-admin', { adminId: id });
-        loadUsers();
-        
-    } catch (e) {
-        alert('Ошибка: ' + e.message);
-        console.error(e);
-    }
-};
-
 function formatDuration(seconds) {
-    if (!seconds || isNaN(seconds)) return '0:00';
+    if (!seconds || isNaN(seconds)) return '';
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
