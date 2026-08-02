@@ -22,7 +22,6 @@ h1 {
     gap: 8px;
     margin-bottom: 30px;
     border-bottom: 2px solid #e0e0e0;
-    flex-wrap: wrap;
 }
 
 .tab {
@@ -200,8 +199,8 @@ h1 {
 }
 
 .menu-button {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     background: #f5f5f5;
     border: none;
     border-radius: 8px;
@@ -249,85 +248,6 @@ h1 {
 
 .track-menu-button svg {
     display: block;
-}
-
-.track-play-btn {
-    width: 32px;
-    height: 32px;
-    background: #1a1a1a;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    margin: 0;
-    flex-shrink: 0;
-    transition: all 0.2s;
-}
-
-.track-play-btn:hover {
-    background: #333333;
-    transform: scale(1.05);
-}
-
-.track-play-btn.playing {
-    background: #e94560;
-}
-
-.track-play-btn.playing:hover {
-    background: #d63851;
-}
-
-.track-play-btn svg {
-    display: block;
-}
-
-.track-play-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex: 1;
-    min-width: 0;
-}
-
-/* Прогресс-бар для треков */
-.track-progress-container {
-    margin-top: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.track-progress-bar {
-    flex: 1;
-    height: 4px;
-    background: #e0e0e0;
-    border-radius: 2px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: height 0.2s;
-}
-
-.track-progress-bar:hover {
-    height: 6px;
-}
-
-.track-progress-fill {
-    height: 100%;
-    background: #1a1a1a;
-    border-radius: 2px;
-    width: 0%;
-    transition: width 0.1s linear;
-}
-
-.track-progress-time {
-    font-size: 11px;
-    color: #999999;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
 }
 
 .dropdown-menu {
@@ -793,11 +713,68 @@ textarea {
     display: none;
 }
 
-.current-user-marker {
-    padding: 12px 16px;
-    font-size: 13px;
-    color: #999999;
-    font-style: italic;
+/* Стили для плеера трека */
+.track-player {
+    margin-top: 12px;
+    padding: 12px;
+    background: #f5f5f5;
+    border-radius: 8px;
+}
+
+.player-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.player-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: #1a1a1a;
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: background 0.2s;
+}
+
+.player-btn:hover {
+    background: #333333;
+}
+
+.player-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.player-time {
+    font-size: 12px;
+    color: #666666;
+    font-variant-numeric: tabular-nums;
+    min-width: 80px;
+    text-align: right;
+}
+
+.player-progress {
+    flex: 1;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.player-progress-fill {
+    height: 100%;
+    background: #1a1a1a;
+    border-radius: 2px;
+    transition: width 0.1s linear;
 }
 
 @media (max-width: 480px) {
