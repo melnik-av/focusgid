@@ -1,16 +1,10 @@
 import { supabase } from './supabase-config.js';
 
-// ⚠️ ЗАМЕНИТЕ НА EMAIL СУПЕР-АДМИНА
-const SUPER_ADMIN_EMAIL = 'andreyname@gmail.com';
-
 let currentTab = 'walks';
 let selectedCoverFile = null;
 let selectedCoverUrl = null;
 let editingWalkId = null;
 let editingTrackId = null;
-let currentUserProfile = null;
-
-// === ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ===
 
 window.switchTab = (tab) => {
     currentTab = tab;
@@ -21,18 +15,12 @@ window.switchTab = (tab) => {
         document.querySelectorAll('.tab')[0].classList.add('active');
         document.getElementById('walksTab').classList.add('active');
         loadWalks();
-    } else if (tab === 'tracks') {
+    } else {
         document.querySelectorAll('.tab')[1].classList.add('active');
         document.getElementById('tracksTab').classList.add('active');
         loadTracks();
-    } else if (tab === 'users') {
-        document.querySelectorAll('.tab')[2].classList.add('active');
-        document.getElementById('usersTab').classList.add('active');
-        loadUsers();
     }
 };
-
-// === АВТОРИЗАЦИЯ ===
 
 window.login = async () => {
     const email = document.getElementById('email').value;
@@ -40,168 +28,27 @@ window.login = async () => {
     const errorEl = document.getElementById('loginError');
     errorEl.textContent = '';
     
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-        errorEl.textContent = '❌ ' + error.message;
-        return;
+        errorEl.textContent = ' ' + error.message;
     }
-    
-    // Проверяем профиль пользователя
-    await checkUserProfile(data.user);
 };
 
 window.logout = async () => {
     await supabase.auth.signOut();
 };
 
-// Проверка и создание профиля пользователя
-async function checkUserProfile(user) {
-    const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-    
-    if (profile) {
-        // Профиль существует
-        if (!profile.approved && profile.role !== 'admin') {
-            // Ведущий не одобрен
-            alert('Ваш аккаунт ещё не одобрен администратором');
-            await supabase.auth.signOut();
-            return;
-        }
-        
-        currentUserProfile = profile;
-        showAdminPanel(user, profile);
+supabase.auth.onAuthStateChange((event, session) => {
+    if (session && session.user) {
+        document.getElementById('loginForm').classList.add('hidden');
+        document.getElementById('adminPanel').classList.remove('hidden');
+        document.getElementById('userEmail').textContent = session.user.email;
+        loadWalks();
     } else {
-        // Профиль не существует
-        if (user.email === SUPER_ADMIN_EMAIL) {
-            // Создаём профиль супер-админа
-            const { error } = await supabase
-                .from('user_profiles')
-                .insert({
-                    user_id: user.id,
-                    role: 'admin',
-                    name: 'Администратор',
-                    email: user.email,
-                    approved: true
-                });
-            
-            if (error) {
-                console.error('Ошибка создания профиля админа:', error);
-                alert('Ошибка создания профиля');
-                await supabase.auth.signOut();
-                return;
-            }
-            
-            currentUserProfile = {
-                user_id: user.id,
-                role: 'admin',
-                name: 'Администратор',
-                email: user.email,
-                approved: true
-            };
-            
-            showAdminPanel(user, currentUserProfile);
-        } else {
-            // Обычный пользователь без профиля
-            alert('Профиль не найден. Обратитесь к администратору.');
-            await supabase.auth.signOut();
-        }
+        document.getElementById('loginForm').classList.remove('hidden');
+        document.getElementById('adminPanel').classList.add('hidden');
     }
-}
-
-function showAdminPanel(user, profile) {
-    document.getElementById('loginForm').classList.add('hidden');
-    document.getElementById('registerForm').classList.add('hidden');
-    document.getElementById('adminPanel').classList.remove('hidden');
-    document.getElementById('userEmail').textContent = user.email;
-    
-    const roleEl = document.getElementById('userRole');
-    if (profile.role === 'admin') {
-        roleEl.innerHTML = '<span class="role-badge role-admin">Администратор</span>';
-        document.getElementById('usersTab').style.display = 'block';
-    } else {
-        roleEl.innerHTML = '<span class="role-badge role-host">Ведущий</span>';
-        document.getElementById('usersTab').style.display = 'none';
-    }
-    
-    loadWalks();
-}
-
-// Регистрация ведущего
-window.registerHost = async () => {
-    const name = document.getElementById('regName').value.trim();
-    const email = document.getElementById('regEmail').value.trim();
-    const phone = document.getElementById('regPhone').value.trim();
-    const bio = document.getElementById('regBio').value.trim();
-    const password = document.getElementById('regPassword').value;
-    const errorEl = document.getElementById('registerError');
-    const successEl = document.getElementById('registerSuccess');
-    
-    errorEl.textContent = '';
-    successEl.textContent = '';
-    
-    if (!name || !email || !password) {
-        errorEl.textContent = 'Заполните обязательные поля';
-        return;
-    }
-    
-    // Создаём пользователя в auth
-    const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-            data: {
-                name: name
-            }
-        }
-    });
-    
-    if (error) {
-        errorEl.textContent = '❌ ' + error.message;
-        return;
-    }
-    
-    // Создаём профиль в user_profiles
-    const { error: profileError } = await supabase
-        .from('user_profiles')
-        .insert({
-            user_id: data.user.id,
-            role: 'host',
-            name: name,
-            email: email,
-            phone: phone || null,
-            bio: bio || null,
-            approved: false
-        });
-    
-    if (profileError) {
-        errorEl.textContent = '❌ Ошибка создания профиля: ' + profileError.message;
-        return;
-    }
-    
-    successEl.textContent = '✅ Заявка отправлена! Ожидайте одобрения администратора.';
-    
-    // Очищаем форму
-    document.getElementById('regName').value = '';
-    document.getElementById('regEmail').value = '';
-    document.getElementById('regPhone').value = '';
-    document.getElementById('regBio').value = '';
-    document.getElementById('regPassword').value = '';
-};
-
-window.showRegisterForm = () => {
-    document.getElementById('loginForm').classList.add('hidden');
-    document.getElementById('registerForm').classList.remove('hidden');
-};
-
-window.showLoginForm = () => {
-    document.getElementById('registerForm').classList.add('hidden');
-    document.getElementById('loginForm').classList.remove('hidden');
-};
-
-// === ОБЛОЖКА ===
+});
 
 function renderCoverPreview(imageUrl, showDelete) {
     const container = document.getElementById('walkCoverPreview');
@@ -238,8 +85,6 @@ document.getElementById('walkCoverFile').addEventListener('change', (e) => {
     }
 });
 
-// === ТИП ПРОГУЛКИ ===
-
 window.onWalkTypeChange = () => {
     const type = document.querySelector('input[name="walkType"]:checked').value;
     const singleField = document.getElementById('singleTrackField');
@@ -265,8 +110,6 @@ function setWalkType(type) {
         onWalkTypeChange();
     }
 }
-
-// === МЕНЮ ===
 
 function closeAllWalkMenus() {
     document.querySelectorAll('.dropdown-menu').forEach(menu => {
@@ -345,113 +188,6 @@ window.copyWalkLink = async (link, title) => {
         alert('Ссылка скопирована!');
     }
 };
-
-// === ПОЛЬЗОВАТЕЛИ ===
-
-async function loadUsers() {
-    if (currentUserProfile.role !== 'admin') {
-        return;
-    }
-    
-    const { data: users, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-    
-    if (error) {
-        console.error('Ошибка загрузки пользователей:', error);
-        return;
-    }
-    
-    const list = document.getElementById('usersList');
-    if (!users || users.length === 0) {
-        list.innerHTML = '<div style="color: #999999; text-align: center; padding: 40px;">Нет пользователей</div>';
-        return;
-    }
-    
-    list.innerHTML = users.map(user => {
-        const roleBadge = user.role === 'admin' 
-            ? '<span class="role-badge role-admin">Админ</span>'
-            : '<span class="role-badge role-host">Ведущий</span>';
-        
-        const pendingBadge = !user.approved ? '<span class="pending-badge">Ожидает одобрения</span>' : '';
-        
-        let actions = '';
-        if (user.user_id !== currentUserProfile.user_id) {
-            if (!user.approved && user.role === 'host') {
-                actions = `
-                    <button class="btn btn-success" onclick="approveUser('${user.user_id}')">Одобрить</button>
-                    <button class="btn btn-danger" onclick="rejectUser('${user.user_id}')">Отклонить</button>
-                `;
-            } else {
-                actions = `
-                    <button class="btn btn-danger" onclick="deleteUser('${user.user_id}')">Удалить</button>
-                `;
-            }
-        }
-        
-        return '<div class="item-card">' +
-            '<div class="user-card">' +
-                '<div class="user-card-info">' +
-                    '<div class="user-card-name">' + user.name + pendingBadge + '</div>' +
-                    '<div class="user-card-email">' + user.email + '</div>' +
-                    '<div>' + roleBadge + '</div>' +
-                    (user.phone ? '<div style="font-size: 13px; color: #999999; margin-top: 4px;"> ' + user.phone + '</div>' : '') +
-                    (user.bio ? '<div style="font-size: 13px; color: #666666; margin-top: 8px; line-height: 1.4;">' + user.bio + '</div>' : '') +
-                '</div>' +
-                '<div class="user-card-actions">' +
-                    actions +
-                '</div>' +
-            '</div>' +
-        '</div>';
-    }).join('');
-}
-
-window.approveUser = async (userId) => {
-    if (!confirm('Одобрить этого пользователя?')) return;
-    
-    const { error } = await supabase
-        .from('user_profiles')
-        .update({ approved: true })
-        .eq('user_id', userId);
-    
-    if (error) {
-        alert('Ошибка: ' + error.message);
-    } else {
-        loadUsers();
-    }
-};
-
-window.rejectUser = async (userId) => {
-    if (!confirm('Отклонить и удалить этого пользователя?')) return;
-    
-    // Удаляем пользователя из auth
-    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-    
-    if (authError) {
-        alert('Ошибка удаления: ' + authError.message);
-        return;
-    }
-    
-    // Профиль удалится автоматически через ON DELETE CASCADE
-    
-    loadUsers();
-};
-
-window.deleteUser = async (userId) => {
-    if (!confirm('Удалить этого пользователя?')) return;
-    
-    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-    
-    if (authError) {
-        alert('Ошибка удаления: ' + authError.message);
-        return;
-    }
-    
-    loadUsers();
-};
-
-// === АУДИОТРЕКИ ===
 
 async function loadTracks() {
     closeAllMenus();
@@ -643,7 +379,7 @@ window.saveTrack = async () => {
         
     } catch (e) {
         console.error('Ошибка загрузки трека:', e);
-        document.getElementById('spinnerText').textContent = '❌ Ошибка: ' + e.message;
+        document.getElementById('spinnerText').textContent = ' Ошибка: ' + e.message;
         document.getElementById('spinnerText').style.color = '#e94560';
         
         setTimeout(() => {
@@ -671,22 +407,13 @@ window.deleteTrack = async (id) => {
     }
 };
 
-// === ПРОГУЛКИ ===
-
 async function loadWalks() {
     closeAllMenus();
     
-    let query = supabase
+    const { data: walks, error } = await supabase
         .from('walks')
         .select('*, audio_tracks!audio_track_id(title), audio_tracks_2:audio_tracks!audio_track_id_2(title)')
         .order('created_at', { ascending: false });
-    
-    // Ведущие видят только свои прогулки
-    if (currentUserProfile && currentUserProfile.role === 'host') {
-        query = query.eq('host_id', currentUserProfile.user_id);
-    }
-    
-    const { data: walks, error } = await query;
     
     if (error) {
         console.error('Ошибка загрузки прогулок:', error);
@@ -745,7 +472,7 @@ async function loadWalks() {
                 '</button>';
         } else {
             const trackTitle = walk.audio_tracks ? walk.audio_tracks.title : 'Без трека';
-            tracksInfo = '🎵 ' + trackTitle;
+            tracksInfo = ' ' + trackTitle;
             
             menuItems = 
                 '<button class="dropdown-item" onclick="copyWalkLink(\'' + walkLink + '\', \'' + walk.title.replace(/'/g, "\\'") + '\')">' +
@@ -877,8 +604,7 @@ window.saveWalk = async () => {
         const walkData = {
             title,
             description: description || null,
-            type,
-            host_id: currentUserProfile.user_id
+            type
         };
         
         if (type === 'pair') {
@@ -938,12 +664,6 @@ window.editWalk = async (id) => {
     
     if (error) {
         alert('Ошибка: ' + error.message);
-        return;
-    }
-    
-    // Проверка прав (ведущий может редактировать только свои)
-    if (currentUserProfile.role === 'host' && walk.host_id !== currentUserProfile.user_id) {
-        alert('У вас нет прав на редактирование этой прогулки');
         return;
     }
     
