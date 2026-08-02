@@ -32,7 +32,7 @@ window.login = async () => {
     
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-        errorEl.textContent = ' ' + error.message;
+        errorEl.textContent = '❌ ' + error.message;
     }
 };
 
@@ -57,7 +57,7 @@ function renderCoverPreview(imageUrl, showDelete) {
     if (showDelete && imageUrl) {
         container.innerHTML = 
             '<img src="' + imageUrl + '" alt="Обложка">' +
-            '<button class="cover-delete-btn" onclick="event.stopPropagation(); removeWalkCover()" title="Удалить обложку"></button>';
+            '<button class="cover-delete-btn" onclick="event.stopPropagation(); removeWalkCover()" title="Удалить обложку">🗑</button>';
     } else {
         container.innerHTML = 
             '<div class="cover-preview-placeholder">' +
@@ -334,10 +334,10 @@ async function loadTracks() {
             
             '<div class="track-dropdown-menu" id="track-menu-' + track.id + '">' +
                 '<button class="track-dropdown-item" onclick="editTrack(\'' + track.id + '\', \'' + track.title.replace(/'/g, "\\'") + '\')">' +
-                    '<span>️</span> Редактировать' +
+                    '<span>✏️</span> Редактировать' +
                 '</button>' +
                 '<button class="track-dropdown-item danger" onclick="deleteTrack(\'' + track.id + '\')">' +
-                    '<span></span> Удалить' +
+                    '<span>🗑</span> Удалить' +
                 '</button>' +
             '</div>' +
         '</div>';
@@ -555,7 +555,7 @@ async function loadWalks() {
         const typeInfo = typeLabels[walkType] || typeLabels['solo'];
         const coverHtml = walk.cover_url 
             ? '<img src="' + walk.cover_url + '" alt="' + walk.title + '">'
-            : '<div class="item-cover-placeholder">🚶</div>';
+            : '<div class="item-cover-placeholder"></div>';
         
         const walkLink = playerUrl + '?walk=' + walk.id;
         
@@ -575,7 +575,7 @@ async function loadWalks() {
                     '<span class="dropdown-icon">👩</span> Ссылка для неё' +
                 '</button>' +
                 '<button class="dropdown-item" onclick="copyWalkLink(\'' + maleLink + '\', \'' + walk.title.replace(/'/g, "\\'") + ' (он)\')">' +
-                    '<span class="dropdown-icon">👨</span> Ссылка для него' +
+                    '<span class="dropdown-icon"></span> Ссылка для него' +
                 '</button>' +
                 '<div class="dropdown-divider"></div>' +
                 '<button class="dropdown-item" onclick="editWalk(\'' + walk.id + '\')">' +
@@ -586,7 +586,7 @@ async function loadWalks() {
                 '</button>';
         } else {
             const trackTitle = walk.audio_tracks ? walk.audio_tracks.title : 'Без трека';
-            tracksInfo = '🎵 ' + trackTitle;
+            tracksInfo = ' ' + trackTitle;
             
             menuItems = 
                 '<button class="dropdown-item" onclick="copyWalkLink(\'' + walkLink + '\', \'' + walk.title.replace(/'/g, "\\'") + '\')">' +
