@@ -715,16 +715,17 @@ textarea {
 
 /* Стили для плеера трека */
 .track-player {
-    margin-top: 8px;
+    margin-top: 12px;
     display: flex;
     align-items: center;
     gap: 12px;
+    width: 100%;
 }
 
 .player-btn {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
     border-radius: 50%;
     border: none;
     background: #1a1a1a;
@@ -733,7 +734,7 @@ textarea {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 18px;
     transition: all 0.2s;
     flex-shrink: 0;
 }
@@ -758,7 +759,7 @@ textarea {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 }
 
 .player-progress {
@@ -807,6 +808,7 @@ textarea {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
 }
 
 .player-time {
