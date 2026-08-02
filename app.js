@@ -1,6 +1,48 @@
 import { supabase } from './supabase-config.js';
 
-console.log('🚀 Плеер запущен');
+console.log(' Плеер запущен');
+
+// === ЗАЩИТА ОТ СЛУЧАЙНОГО ОБНОВЛЕНИЯ ===
+
+// 1. Предотвращаем pull-to-refresh (свайп вниз)
+document.addEventListener('touchmove', (e) => {
+    if (!e.target.closest('.player-container')) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+// 2. Предотвращаем обновление через клавиатуру
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'F5') {
+        e.preventDefault();
+        return false;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        return false;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'r') {
+        e.preventDefault();
+        return false;
+    }
+});
+
+// 3. Предупреждение при попытке закрыть/обновить страницу
+window.addEventListener('beforeunload', (e) => {
+    const audio = document.querySelector('audio');
+    if (audio && !audio.paused) {
+        e.preventDefault();
+        e.returnValue = 'Аудио воспроизводится. Вы уверены?';
+        return e.returnValue;
+    }
+});
+
+// 4. Отключаем контекстное меню
+document.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+});
+
+// === ЭЛЕМЕНТЫ DOM ===
 
 const coverContainer = document.getElementById('coverContainer');
 const trackTitle = document.getElementById('trackTitle');
@@ -85,7 +127,6 @@ function updateProgress() {
     }
 }
 
-// Загрузка данных прогулки и трека
 async function loadWalkData(walkId, role) {
     console.log('📥 Загрузка прогулки:', walkId, 'role:', role);
     
@@ -106,7 +147,6 @@ async function loadWalkData(walkId, role) {
     
     console.log('✅ Прогулка загружена:', walk.title, 'type:', walk.type);
     
-    // Определяем какой трек использовать
     let track = null;
     if (walk.type === 'pair' && role) {
         if (role === 'male') {
@@ -140,6 +180,7 @@ async function loadWalk(walkId, role) {
         const { walk, track } = await loadWalkData(walkId, role);
         
         trackTitle.textContent = walk.title || 'Аудиопрогулка';
+        trackTitle.style.display = 'block';
         
         if (walk.description && walk.description.trim()) {
             trackDescription.textContent = walk.description;
@@ -148,6 +189,7 @@ async function loadWalk(walkId, role) {
             trackDescription.classList.add('hidden');
         }
         
+        coverContainer.style.display = 'block';
         if (walk.cover_url) {
             coverContainer.innerHTML = '<img src="' + walk.cover_url + '" alt="' + walk.title + '">';
         } else {
@@ -222,7 +264,7 @@ async function activateByKey(key) {
             .single();
         
         if (error || !purchase) {
-            showKeyForm('❌ Неверный ключ доступа');
+            showKeyForm(' Неверный ключ доступа');
             return;
         }
         
@@ -251,12 +293,14 @@ async function activateByKey(key) {
         }
         
         trackTitle.textContent = walk.title || 'Аудиопрогулка';
+        trackTitle.style.display = 'block';
         
         if (walk.description && walk.description.trim()) {
             trackDescription.textContent = walk.description;
             trackDescription.classList.remove('hidden');
         }
         
+        coverContainer.style.display = 'block';
         if (walk.cover_url) {
             coverContainer.innerHTML = '<img src="' + walk.cover_url + '" alt="' + walk.title + '">';
         } else {
@@ -322,6 +366,15 @@ keyInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         activateBtn.click();
     }
+});
+
+progressBarWrapper.addEventListener('click', (e) => {
+    if (!audio || !audio.duration) return;
+    
+    const rect = progressBarWrapper.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = x / rect.width;
+    audio.currentTime = percentage * audio.duration;
 });
 
 async function init() {
