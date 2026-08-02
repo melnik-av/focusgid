@@ -3,73 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Иммерсивная прогулка</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#fafafa">
+    <title>Аудиопрогулка</title>
+    <link rel="manifest" href="manifest.json">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; }
         
         html, body {
+            overscroll-behavior: none;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
             height: 100%;
-            overflow-x: hidden;
-            max-width: 100vw;
+            margin: 0;
+            padding: 0;
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #fafafa;
             color: #1a1a1a;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        
-        .player {
-            width: 100%;
-            max-width: 400px;
             display: flex;
             flex-direction: column;
             align-items: center;
-        }
-        
-        .cover-wrapper {
-            position: relative;
-            width: 100%;
-            height: 280px;
-            display: flex;
-            align-items: center;
             justify-content: center;
-            margin-bottom: 8px;
+            min-height: 100vh;
+            -webkit-user-select: none;
+            user-select: none;
         }
         
-        .waveform-bg {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        .player-container {
             width: 100%;
-            max-width: 400px;
-            height: auto;
-            pointer-events: none;
-            z-index: 1;
-        }
-        
-        .waveform-bg rect {
-            fill: #c8c8c8;
+            max-width: 500px;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            max-height: 100vh;
         }
         
         .cover-container {
-            position: relative;
-            width: 220px;
-            height: 220px;
-            border-radius: 20px;
+            width: 280px;
+            height: 280px;
+            border-radius: 24px;
             overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-            background: #f0f0f0;
-            z-index: 2;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            margin-bottom: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            flex-shrink: 0;
         }
         
         .cover-container img {
@@ -82,20 +69,18 @@
         .cover-placeholder {
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 60px;
+            font-size: 80px;
         }
         
         .track-title {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 700;
-            color: #1a1a1a;
             text-align: center;
-            margin-bottom: 12px;
-            line-height: 1.2;
+            margin: 0 0 12px 0;
+            letter-spacing: -0.5px;
         }
         
         .track-description {
@@ -103,223 +88,220 @@
             color: #666666;
             text-align: center;
             line-height: 1.5;
-            margin-bottom: 24px;
-            padding: 0 10px;
+            margin: 0 0 32px 0;
+            padding: 0 20px;
+        }
+        
+        .track-description.hidden { display: none; }
+        
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+        
+        .loading-state.hidden { display: none; }
+        
+        .loading-text {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .error-state {
+            background: #fff5f7;
+            color: #e94560;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 15px;
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .error-state.hidden { display: none; }
+        
+        .key-form {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .key-form.hidden { display: none; }
+        
+        .key-form input {
+            width: 100%;
+            padding: 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        
+        .key-form input:focus {
+            outline: none;
+            border-color: #1a1a1a;
+        }
+        
+        .key-form button {
+            width: 100%;
+            padding: 16px;
+            background: #1a1a1a;
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        
+        .key-form button:hover {
+            background: #333333;
         }
         
         .progress-container {
             width: 100%;
-            padding: 0 10px;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
+            max-width: 400px;
+            margin-top: 20px;
         }
         
-        .time-label {
-            font-size: 14px;
-            color: #1a1a1a;
-            font-variant-numeric: tabular-nums;
-            min-width: 45px;
-            font-weight: 500;
-        }
-        
-        .time-label.current { text-align: right; }
-        .time-label.total { text-align: left; }
+        .progress-container.hidden { display: none; }
         
         .progress-bar-wrapper {
-            flex: 1;
-            height: 4px;
+            width: 100%;
+            height: 6px;
             background: #e0e0e0;
-            border-radius: 2px;
-            overflow: hidden;
+            border-radius: 3px;
+            cursor: pointer;
             position: relative;
+            overflow: hidden;
         }
         
         .progress-bar-fill {
             height: 100%;
             background: #1a1a1a;
+            border-radius: 3px;
             width: 0%;
-            border-radius: 2px;
             transition: width 0.1s linear;
         }
         
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            font-size: 13px;
+            color: #999999;
+            font-variant-numeric: tabular-nums;
+        }
+        
         .play-button {
-            width: 100%;
-            max-width: 320px;
-            padding: 20px 40px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: none;
             background: #1a1a1a;
             color: #ffffff;
-            border: none;
-            border-radius: 50px;
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 24px;
             cursor: pointer;
-            transition: all 0.2s;
-            -webkit-tap-highlight-color: transparent;
-            letter-spacing: 0.5px;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 64px;
+            transition: all 0.2s;
+            margin-top: 20px;
+            position: relative;
         }
         
-        .play-button:hover:not(:disabled) { background: #333333; transform: scale(1.02); }
-        .play-button:active:not(:disabled) { transform: scale(0.98); }
-        .play-button:disabled { background: #cccccc; cursor: not-allowed; }
+        .play-button:hover {
+            background: #333333;
+            transform: scale(1.05);
+        }
+        
+        .play-button:active {
+            transform: scale(0.95);
+        }
+        
+        .play-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .play-button.hidden { display: none; }
+        
+        .button-text {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .button-text.hidden { display: none; }
         
         .spinner {
-            width: 24px;
-            height: 24px;
+            width: 32px;
+            height: 32px;
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-top-color: #ffffff;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
         
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        .button-text { display: inline-block; }
-        
-        .loading-state { text-align: center; color: #666666; padding: 20px; }
-        
-        .error-state {
-            text-align: center;
-            color: #e94560;
-            padding: 20px;
-            background: rgba(233, 69, 96, 0.1);
-            border-radius: 12px;
-            margin: 20px 0;
-            width: 100%;
-        }
-        
-        .key-form {
-            width: 100%;
-            padding: 20px;
-            background: #f8f8f8;
-            border-radius: 16px;
-            margin: 20px 0;
-        }
-        
-        .key-form p { font-size: 15px; color: #666; margin-bottom: 15px; text-align: center; }
-        
-        .key-form input {
-            width: 100%;
-            padding: 14px;
-            border-radius: 12px;
-            border: 1px solid #ddd;
-            background: white;
-            font-size: 16px;
-            text-align: center;
-            letter-spacing: 2px;
-            margin-bottom: 12px;
-            font-family: monospace;
-        }
-        
-        .key-form input:focus { outline: none; border-color: #1a1a1a; }
-        
-        .key-form button {
-            width: 100%;
-            padding: 14px;
-            background: #1a1a1a;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
         
         .hidden { display: none !important; }
         
         @media (max-width: 480px) {
-            .cover-wrapper { height: 240px; }
-            .cover-container { width: 180px; height: 180px; }
-            .waveform-bg { width: 100%; max-width: 320px; }
-            .track-title { font-size: 22px; }
-            .track-description { font-size: 14px; }
-            .time-label { font-size: 13px; min-width: 40px; }
+            .cover-container {
+                width: 240px;
+                height: 240px;
+            }
+            
+            .track-title {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="player">
-        <div class="cover-wrapper">
-            <svg class="waveform-bg" viewBox="0 0 560 120" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-                <rect x="5" y="50" width="6" height="20" rx="3"/>
-                <rect x="18" y="30" width="6" height="60" rx="3"/>
-                <rect x="31" y="45" width="6" height="30" rx="3"/>
-                <rect x="44" y="20" width="6" height="80" rx="3"/>
-                <rect x="57" y="40" width="6" height="40" rx="3"/>
-                <rect x="70" y="15" width="6" height="90" rx="3"/>
-                <rect x="83" y="35" width="6" height="50" rx="3"/>
-                <rect x="96" y="10" width="6" height="100" rx="3"/>
-                <rect x="109" y="45" width="6" height="30" rx="3"/>
-                <rect x="122" y="25" width="6" height="70" rx="3"/>
-                <rect x="135" y="50" width="6" height="20" rx="3"/>
-                <rect x="148" y="15" width="6" height="90" rx="3"/>
-                <rect x="161" y="35" width="6" height="50" rx="3"/>
-                <rect x="174" y="5" width="6" height="110" rx="3"/>
-                <rect x="187" y="40" width="6" height="40" rx="3"/>
-                <rect x="200" y="20" width="6" height="80" rx="3"/>
-                <rect x="213" y="45" width="6" height="30" rx="3"/>
-                <rect x="226" y="10" width="6" height="100" rx="3"/>
-                <rect x="239" y="30" width="6" height="60" rx="3"/>
-                <rect x="252" y="50" width="6" height="20" rx="3"/>
-                <rect x="265" y="15" width="6" height="90" rx="3"/>
-                <rect x="278" y="40" width="6" height="40" rx="3"/>
-                <rect x="291" y="40" width="6" height="40" rx="3"/>
-                <rect x="304" y="15" width="6" height="90" rx="3"/>
-                <rect x="317" y="50" width="6" height="20" rx="3"/>
-                <rect x="330" y="30" width="6" height="60" rx="3"/>
-                <rect x="343" y="10" width="6" height="100" rx="3"/>
-                <rect x="356" y="45" width="6" height="30" rx="3"/>
-                <rect x="369" y="20" width="6" height="80" rx="3"/>
-                <rect x="382" y="40" width="6" height="40" rx="3"/>
-                <rect x="395" y="5" width="6" height="110" rx="3"/>
-                <rect x="408" y="35" width="6" height="50" rx="3"/>
-                <rect x="421" y="15" width="6" height="90" rx="3"/>
-                <rect x="434" y="50" width="6" height="20" rx="3"/>
-                <rect x="447" y="25" width="6" height="70" rx="3"/>
-                <rect x="460" y="45" width="6" height="30" rx="3"/>
-                <rect x="473" y="10" width="6" height="100" rx="3"/>
-                <rect x="486" y="35" width="6" height="50" rx="3"/>
-                <rect x="499" y="15" width="6" height="90" rx="3"/>
-                <rect x="512" y="40" width="6" height="40" rx="3"/>
-                <rect x="525" y="20" width="6" height="80" rx="3"/>
-                <rect x="538" y="45" width="6" height="30" rx="3"/>
-                <rect x="551" y="30" width="6" height="60" rx="3"/>
-            </svg>
-            <div class="cover-container" id="coverContainer">
-                <div class="cover-placeholder"></div>
+    <div class="player-container">
+        <div class="loading-state" id="loadingState">
+            <div class="cover-container">
+                <div class="cover-placeholder">🎧</div>
             </div>
-        </div>
-        
-        <h1 class="track-title" id="trackTitle">Загрузка...</h1>
-        
-        <p class="track-description hidden" id="trackDescription"></p>
-        
-        <div class="loading-state" id="loadingState">Подключение...</div>
-        
-        <div class="key-form hidden" id="keyForm">
-            <p>Введите ключ доступа для прослушивания:</p>
-            <input type="text" id="keyInput" placeholder="XXXXXXXXXXXXXXXX" maxlength="20">
-            <button id="activateBtn">Активировать</button>
+            <div class="loading-text">Загрузка...</div>
         </div>
         
         <div class="error-state hidden" id="errorState"></div>
         
+        <div class="key-form hidden" id="keyForm">
+            <input type="text" id="keyInput" placeholder="Введите ключ доступа" autocomplete="off">
+            <button id="activateBtn">Активировать</button>
+        </div>
+        
+        <div class="cover-container" id="coverContainer" style="display: none;">
+            <div class="cover-placeholder">🎧</div>
+        </div>
+        
+        <h1 class="track-title" id="trackTitle" style="display: none;"></h1>
+        <p class="track-description hidden" id="trackDescription"></p>
+        
+        <button class="play-button hidden" id="playBtn" disabled>
+            <span class="button-text" id="buttonText">Играть</span>
+        </button>
+        
         <div class="progress-container hidden" id="progressContainer">
-            <div class="time-label current" id="currentTime">0:00</div>
             <div class="progress-bar-wrapper" id="progressBarWrapper">
                 <div class="progress-bar-fill" id="progressBarFill"></div>
             </div>
-            <div class="time-label total" id="totalTime">0:00</div>
+            <div class="time-display">
+                <span id="currentTime">0:00</span>
+                <span id="totalTime">0:00</span>
+            </div>
         </div>
-        
-        <button class="play-button hidden" id="playBtn" disabled>
-            <span class="button-text" id="buttonText">Загрузка...</span>
-        </button>
     </div>
 
     <script type="module" src="app.js"></script>
