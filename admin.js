@@ -5,6 +5,8 @@ let selectedCoverFile = null;
 let selectedCoverUrl = null;
 let editingWalkId = null;
 let editingTrackId = null;
+let currentAudio = null;
+let currentPlayingTrackId = null;
 
 window.switchTab = (tab) => {
     currentTab = tab;
@@ -30,7 +32,7 @@ window.login = async () => {
     
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-        errorEl.textContent = ' ' + error.message;
+        errorEl.textContent = '❌ ' + error.message;
     }
 };
 
@@ -189,8 +191,108 @@ window.copyWalkLink = async (link, title) => {
     }
 };
 
+// === ПЛЕЕР ДЛЯ ТРЕКОВ ===
+
+function formatTime(seconds) {
+    if (isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return mins + ':' + secs.toString().padStart(2, '0');
+}
+
+window.toggleTrackPlayback = async (trackId, fileUrl) => {
+    // Если этот трек уже играет — останавливаем
+    if (currentPlayingTrackId === trackId && currentAudio) {
+        stopTrackPlayback();
+        return;
+    }
+    
+    // Останавливаем предыдущий трек
+    stopTrackPlayback();
+    
+    // Создаём новый аудио элемент
+    currentAudio = new Audio(fileUrl);
+    currentAudio.preload = 'auto';
+    currentPlayingTrackId = trackId;
+    
+    // Обновляем UI
+    updatePlayerButton(trackId, 'playing');
+    
+    try {
+        await currentAudio.play();
+        
+        // Обновляем прогресс
+        currentAudio.addEventListener('timeupdate', () => {
+            updatePlayerProgress(trackId, currentAudio.currentTime, currentAudio.duration);
+        });
+        
+        currentAudio.addEventListener('ended', () => {
+            stopTrackPlayback();
+        });
+        
+    } catch (error) {
+        console.error('Ошибка воспроизведения:', error);
+        stopTrackPlayback();
+    }
+};
+
+window.stopTrackPlayback = () => {
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.src = '';
+        currentAudio = null;
+    }
+    
+    if (currentPlayingTrackId) {
+        updatePlayerButton(currentPlayingTrackId, 'stopped');
+        updatePlayerProgress(currentPlayingTrackId, 0, 0);
+        currentPlayingTrackId = null;
+    }
+};
+
+window.seekTrack = (trackId, event) => {
+    if (!currentAudio || currentPlayingTrackId !== trackId) return;
+    
+    const progressBar = event.currentTarget;
+    const rect = progressBar.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const percentage = x / rect.width;
+    const newTime = percentage * currentAudio.duration;
+    
+    currentAudio.currentTime = newTime;
+    updatePlayerProgress(trackId, newTime, currentAudio.duration);
+};
+
+function updatePlayerButton(trackId, state) {
+    const btn = document.getElementById('player-btn-' + trackId);
+    if (!btn) return;
+    
+    if (state === 'playing') {
+        btn.innerHTML = '⏸';
+        btn.classList.add('playing');
+    } else {
+        btn.innerHTML = '▶';
+        btn.classList.remove('playing');
+    }
+}
+
+function updatePlayerProgress(trackId, currentTime, duration) {
+    const fill = document.getElementById('player-progress-' + trackId);
+    const timeEl = document.getElementById('player-time-' + trackId);
+    
+    if (fill && duration) {
+        const percentage = (currentTime / duration) * 100;
+        fill.style.width = percentage + '%';
+    }
+    
+    if (timeEl) {
+        timeEl.textContent = formatTime(currentTime) + ' / ' + formatTime(duration);
+    }
+}
+
 async function loadTracks() {
     closeAllMenus();
+    stopTrackPlayback();
     
     const { data: tracks, error } = await supabase
         .from('audio_tracks')
@@ -212,14 +314,25 @@ async function loadTracks() {
     
     list.innerHTML = tracks.map(track => {
         const duration = formatDuration(track.duration);
-        const durationText = duration ? ' · ' + duration : '';
+        const durationText = duration || '0:00';
         
         return '<div class="item-card" id="track-' + track.id + '">' +
             '<div class="item-header" style="align-items: center;">' +
                 '<div class="item-info">' +
-                    '<h3 class="item-title" style="margin: 0;">' + track.title + '<span style="font-weight: 400; color: #999999;">' + durationText + '</span></h3>' +
+                    '<h3 class="item-title" style="margin: 0;">' + track.title + '</h3>' +
+                    '<div class="item-meta">' + durationText + '</div>' +
                 '</div>' +
                 '<button class="track-menu-button" onclick="toggleTrackMenu(\'' + track.id + '\')" title="Меню">' + dotsIcon + '</button>' +
+            '</div>' +
+            
+            '<div class="track-player">' +
+                '<div class="player-controls">' +
+                    '<button class="player-btn" id="player-btn-' + track.id + '" onclick="toggleTrackPlayback(\'' + track.id + '\', \'' + track.file_url + '\')">▶</button>' +
+                    '<div class="player-progress" id="player-progress-container-' + track.id + '" onclick="seekTrack(\'' + track.id + '\', event)">' +
+                        '<div class="player-progress-fill" id="player-progress-' + track.id + '" style="width: 0%"></div>' +
+                    '</div>' +
+                    '<span class="player-time" id="player-time-' + track.id + '">0:00 / ' + durationText + '</span>' +
+                '</div>' +
             '</div>' +
             
             '<div class="track-dropdown-menu" id="track-menu-' + track.id + '">' +
@@ -379,7 +492,7 @@ window.saveTrack = async () => {
         
     } catch (e) {
         console.error('Ошибка загрузки трека:', e);
-        document.getElementById('spinnerText').textContent = ' Ошибка: ' + e.message;
+        document.getElementById('spinnerText').textContent = '❌ Ошибка: ' + e.message;
         document.getElementById('spinnerText').style.color = '#e94560';
         
         setTimeout(() => {
@@ -393,6 +506,10 @@ window.saveTrack = async () => {
 
 window.deleteTrack = async (id) => {
     closeAllMenus();
+    if (currentPlayingTrackId === id) {
+        stopTrackPlayback();
+    }
+    
     if (!confirm('Удалить этот трек?')) return;
     
     const { error } = await supabase
@@ -468,7 +585,7 @@ async function loadWalks() {
                     '<span class="dropdown-icon">✏️</span> Редактировать' +
                 '</button>' +
                 '<button class="dropdown-item danger" onclick="deleteWalk(\'' + walk.id + '\')">' +
-                    '<span class="dropdown-icon"></span> Удалить' +
+                    '<span class="dropdown-icon">🗑</span> Удалить' +
                 '</button>';
         } else {
             const trackTitle = walk.audio_tracks ? walk.audio_tracks.title : 'Без трека';
@@ -480,7 +597,7 @@ async function loadWalks() {
                 '</button>' +
                 '<div class="dropdown-divider"></div>' +
                 '<button class="dropdown-item" onclick="editWalk(\'' + walk.id + '\')">' +
-                    '<span class="dropdown-icon">✏️</span> Редактировать' +
+                    '<span class="dropdown-icon">️</span> Редактировать' +
                 '</button>' +
                 '<button class="dropdown-item danger" onclick="deleteWalk(\'' + walk.id + '\')">' +
                     '<span class="dropdown-icon">🗑</span> Удалить' +
@@ -580,7 +697,7 @@ window.saveWalk = async () => {
         let coverUrl = null;
         
         if (selectedCoverFile) {
-            document.getElementById('walkSpinnerText').textContent = '📤 Загрузка обложки...';
+            document.getElementById('walkSpinnerText').textContent = ' Загрузка обложки...';
             
             const coverFileName = 'cover_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.jpg';
             const { error: uploadError } = await supabase.storage
