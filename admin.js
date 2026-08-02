@@ -1,7 +1,7 @@
 import { supabase } from './supabase-config.js';
 
 // ⚠️ ЗАМЕНИТЕ НА EMAIL СУПЕР-АДМИНА
-const SUPER_ADMIN_EMAIL = 'admin@focusgid.ru';
+const SUPER_ADMIN_EMAIL = 'andreyname@gmail.com';
 
 let currentTab = 'walks';
 let selectedCoverFile = null;
