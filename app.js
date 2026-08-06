@@ -86,7 +86,7 @@ function updateProgress() {
 }
 
 async function loadWalkData(walkId, role) {
-    console.log('📥 Загрузка прогулки:', walkId, 'role:', role);
+    console.log(' Загрузка прогулки:', walkId, 'role:', role);
     
     const { data: walk, error } = await supabase
         .from('walks')
@@ -98,30 +98,50 @@ async function loadWalkData(walkId, role) {
         .eq('id', walkId)
         .single();
     
-    if (error || !walk) {
-        console.error('Ошибка загрузки прогулки:', error);
-        throw new Error('Трек не найден или недоступен');
+    if (error) {
+        console.error('❌ Ошибка загрузки прогулки:', error);
+        throw new Error('Прогулка не найдена или недоступна');
     }
     
-    console.log('✅ Прогулка загружена:', walk.title, 'type:', walk.type);
+    console.log('✅ Прогулка загружена:', walk);
+    console.log('📊 Данные прогулки:', {
+        id: walk.id,
+        title: walk.title,
+        type: walk.type,
+        audio_track_id: walk.audio_track_id,
+        audio_track_id_2: walk.audio_track_id_2,
+        audio_tracks: walk.audio_tracks,
+        audio_tracks_2: walk.audio_tracks_2
+    });
     
     let track = null;
     if (walk.type === 'pair' && role) {
         if (role === 'male') {
             track = walk.audio_tracks_2;
-            console.log('🎧 Выбран мужской трек:', track?.title);
+            console.log('🎧 Выбран мужской трек:', track);
         } else {
             track = walk.audio_tracks;
-            console.log('🎧 Выбран женский трек:', track?.title);
+            console.log('🎧 Выбран женский трек:', track);
         }
     } else {
         track = walk.audio_tracks;
-        console.log('🎧 Выбран трек:', track?.title);
+        console.log('🎧 Выбран трек:', track);
     }
     
-    if (!track || !track.file_url) {
-        throw new Error('Аудиотрек не найден');
+    if (!track) {
+        console.error('❌ Трек не найден в данных прогулки');
+        console.error('Тип прогулки:', walk.type);
+        console.error('ID трека:', walk.audio_track_id);
+        console.error('ID трека 2:', walk.audio_track_id_2);
+        throw new Error('Аудиотрек не найден. Проверьте, что прогулке назначен трек в админке.');
     }
+    
+    if (!track.file_url) {
+        console.error('❌ У трека нет file_url:', track);
+        throw new Error('У аудиотрека отсутствует файл. Загрузите файл в админке.');
+    }
+    
+    console.log('✅ Трек найден:', track.title, track.file_url);
     
     return { walk, track };
 }
@@ -225,7 +245,7 @@ async function activateByKey(key) {
         }
         
         if (purchase.expires_at && new Date(purchase.expires_at) < new Date()) {
-            showKeyForm('⏰ Срок аренды истек');
+            showKeyForm(' Срок аренды истек');
             return;
         }
         
@@ -321,8 +341,6 @@ keyInput.addEventListener('keypress', (e) => {
         activateBtn.click();
     }
 });
-
-// Обработчик клика по прогресс-бару намеренно удален, чтобы перемотка была запрещена
 
 async function init() {
     const params = new URLSearchParams(window.location.search);
