@@ -35,16 +35,16 @@ function showLoadingSpinner() {
     playBtn.disabled = true;
     buttonText.style.display = 'none';
     
-    const oldSpinner = playBtn.querySelector('.spinner');
+    const oldSpinner = playBtn.querySelector('.spinner-btn');
     if (oldSpinner) oldSpinner.remove();
     
     const spinner = document.createElement('div');
-    spinner.className = 'spinner';
+    spinner.className = 'spinner-btn';
     playBtn.appendChild(spinner);
 }
 
 function showButtonText(text) {
-    const spinner = playBtn.querySelector('.spinner');
+    const spinner = playBtn.querySelector('.spinner-btn');
     if (spinner) spinner.remove();
     
     buttonText.textContent = text;
@@ -149,7 +149,7 @@ async function loadWalk(walkId, role) {
         if (walk.cover_url) {
             coverContainer.innerHTML = '<img src="' + walk.cover_url + '" alt="' + walk.title + '">';
         } else {
-            coverContainer.innerHTML = '<div class="cover-placeholder"></div>';
+            coverContainer.innerHTML = '<div class="cover-placeholder">🎧</div>';
         }
         
         currentTrackId = track.id;
@@ -322,14 +322,7 @@ keyInput.addEventListener('keypress', (e) => {
     }
 });
 
-progressBarWrapper.addEventListener('click', (e) => {
-    if (!audio || !audio.duration) return;
-    
-    const rect = progressBarWrapper.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percentage = x / rect.width;
-    audio.currentTime = percentage * audio.duration;
-});
+// Обработчик клика по прогресс-бару намеренно удален, чтобы перемотка была запрещена
 
 async function init() {
     const params = new URLSearchParams(window.location.search);
