@@ -1,6 +1,6 @@
 import { supabase } from './supabase-config.js';
 
-console.log(' Плеер запущен');
+console.log('🚀 Плеер запущен');
 
 const coverContainer = document.getElementById('coverContainer');
 const trackTitle = document.getElementById('trackTitle');
@@ -88,7 +88,6 @@ function updateProgress() {
 async function loadWalkData(walkId, role) {
     console.log('📥 Загрузка прогулки:', walkId, 'role:', role);
     
-    // Загружаем прогулку
     const { data: walk, error } = await supabase
         .from('walks')
         .select('*')
@@ -101,11 +100,10 @@ async function loadWalkData(walkId, role) {
     }
     
     console.log('✅ Прогулка:', walk);
-    console.log('🔑 audio_track_id:', walk.audio_track_id);
-    console.log(' audio_track_id_2:', walk.audio_track_id_2);
+    console.log(' audio_track_id:', walk.audio_track_id);
+    console.log('🔑 audio_track_id_2:', walk.audio_track_id_2);
     console.log('📊 type:', walk.type);
     
-    // Загружаем треки отдельно
     let track1 = null;
     let track2 = null;
     
@@ -132,18 +130,17 @@ async function loadWalkData(walkId, role) {
             .single();
         
         if (e2) {
-            console.error(' Ошибка загрузки трека 2:', e2);
+            console.error('❌ Ошибка загрузки трека 2:', e2);
         } else {
             track2 = t2;
-            console.log('🎵 Трек 2:', track2);
+            console.log(' Трек 2:', track2);
         }
     }
     
-    // Выбираем трек
     let track = null;
     if (walk.type === 'pair' && role) {
         track = role === 'male' ? track2 : track1;
-        console.log('🎧 Выбран трек:', track, 'role:', role);
+        console.log(' Выбран трек:', track, 'role:', role);
     } else {
         track = track1;
         console.log('🎧 Выбран трек:', track);
