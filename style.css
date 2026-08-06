@@ -1,0 +1,238 @@
+* { 
+    box-sizing: border-box; 
+}
+
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+    max-width: 600px; 
+    margin: 0 auto; 
+    padding: 40px 20px; 
+    background: #fafafa; 
+    color: #1a1a1a; 
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#coverContainer {
+    width: 280px;
+    height: 280px;
+    border-radius: 24px;
+    overflow: hidden;
+    margin-bottom: 32px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#coverContainer img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.cover-placeholder {
+    font-size: 80px;
+    color: #ffffff;
+}
+
+#trackTitle {
+    font-size: 24px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 12px;
+    width: 100%;
+}
+
+#trackDescription {
+    font-size: 14px;
+    color: #666666;
+    text-align: center;
+    line-height: 1.5;
+    margin-bottom: 32px;
+    width: 100%;
+}
+
+#trackDescription.hidden {
+    display: none;
+}
+
+#loadingState {
+    text-align: center;
+    margin-top: 100px;
+}
+
+#loadingState .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #e0e0e0;
+    border-top-color: #1a1a1a;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+#keyForm {
+    width: 100%;
+    max-width: 400px;
+    margin-top: 40px;
+}
+
+#keyForm input {
+    width: 100%;
+    padding: 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 16px;
+    margin-bottom: 16px;
+    font-family: inherit;
+    text-align: center;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+#keyForm input:focus {
+    outline: none;
+    border-color: #1a1a1a;
+}
+
+#activateBtn {
+    width: 100%;
+    padding: 16px;
+    background: #1a1a1a;
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+#activateBtn:hover {
+    background: #333333;
+}
+
+#errorState {
+    background: #fff0f0;
+    color: #e94560;
+    padding: 16px 24px;
+    border-radius: 12px;
+    text-align: center;
+    margin-top: 20px;
+    width: 100%;
+    max-width: 400px;
+}
+
+#errorState.hidden {
+    display: none;
+}
+
+#progressContainer {
+    width: 100%;
+    max-width: 400px;
+    margin-top: 32px;
+}
+
+#progressContainer.hidden {
+    display: none;
+}
+
+.progress-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+#progressBarWrapper {
+    flex: 1;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+    /* Курсор по умолчанию, перемотка запрещена */
+}
+
+#progressBarFill {
+    height: 100%;
+    background: #1a1a1a;
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.1s linear;
+}
+
+.time-display {
+    font-size: 12px;
+    color: #999999;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    min-width: 80px;
+    text-align: right;
+}
+
+#playBtn {
+    width: 100%;
+    padding: 18px;
+    border-radius: 16px;
+    border: none;
+    background: #1a1a1a;
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    position: relative;
+}
+
+#playBtn:hover {
+    background: #333333;
+}
+
+#playBtn:active {
+    transform: scale(0.98);
+}
+
+#playBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#playBtn.hidden {
+    display: none;
+}
+
+.spinner-btn {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.hidden {
+    display: none !important;
+}
+
+@media (max-width: 480px) {
+    #coverContainer {
+        width: 240px;
+        height: 240px;
+    }
+    #trackTitle {
+        font-size: 20px;
+    }
+}
